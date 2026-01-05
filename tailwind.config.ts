@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,6 +51,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        category: {
+          insight: "hsl(var(--category-insight))",
+          "insight-light": "hsl(var(--category-insight-light))",
+          asset: "hsl(var(--category-asset))",
+          "asset-light": "hsl(var(--category-asset-light))",
+          tech: "hsl(var(--category-tech))",
+          "tech-light": "hsl(var(--category-tech-light))",
+          random: "hsl(var(--category-random))",
+          "random-light": "hsl(var(--category-random-light))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -65,25 +79,33 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "twist-pulse": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+        },
+        "card-flip": {
+          "0%": { transform: "rotateY(0deg)" },
+          "50%": { transform: "rotateY(90deg)" },
+          "100%": { transform: "rotateY(0deg)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "twist-pulse": "twist-pulse 0.6s ease-in-out",
+        "card-flip": "card-flip 0.5s ease-in-out",
+        shimmer: "shimmer 2s linear infinite",
       },
     },
   },
