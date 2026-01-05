@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Save, X } from 'lucide-react';
+import { Sparkles, Save } from 'lucide-react';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,12 @@ interface TwistModalProps {
   onClose: () => void;
   selectedCards: Record<Category, Card | null>;
   onSave: (title: string, description: string, author?: string) => void;
+  isCollaborative?: boolean;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
-export function TwistModal({ isOpen, onClose, selectedCards, onSave }: TwistModalProps) {
+export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollaborative = false }: TwistModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [author, setAuthor] = useState('');
@@ -61,6 +62,11 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave }: TwistModa
               <Sparkles className="w-6 h-6 text-category-random" />
             </motion.span>
             TWIST Moment!
+            {isCollaborative && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                (shared with session)
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -81,7 +87,9 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave }: TwistModa
               >
                 <Sparkles className="w-10 h-10 text-primary-foreground" />
               </motion.div>
-              <h3 className="font-display text-2xl font-bold">Idea Saved!</h3>
+              <h3 className="font-display text-2xl font-bold">
+                {isCollaborative ? 'Idea Shared!' : 'Idea Saved!'}
+              </h3>
             </motion.div>
           ) : (
             <motion.div
@@ -133,7 +141,9 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave }: TwistModa
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Author (optional)</label>
+                  <label className="text-sm font-medium mb-2 block">
+                    Your Name {isCollaborative ? '' : '(optional)'}
+                  </label>
                   <Input
                     placeholder="Your name"
                     value={author}
@@ -148,7 +158,7 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave }: TwistModa
                 </Button>
                 <Button onClick={handleSave} disabled={!title.trim()} className="gap-2">
                   <Save className="w-4 h-4" />
-                  Save Idea
+                  {isCollaborative ? 'Share Idea' : 'Save Idea'}
                 </Button>
               </div>
             </motion.div>
