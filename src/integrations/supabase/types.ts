@@ -14,7 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      session_ideas: {
+        Row: {
+          author_name: string | null
+          card_asset: string
+          card_insight: string
+          card_random: string
+          card_tech: string
+          created_at: string
+          description: string | null
+          id: string
+          session_id: string
+          title: string
+        }
+        Insert: {
+          author_name?: string | null
+          card_asset: string
+          card_insight: string
+          card_random: string
+          card_tech: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          session_id: string
+          title: string
+        }
+        Update: {
+          author_name?: string | null
+          card_asset?: string
+          card_insight?: string
+          card_random?: string
+          card_tech?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          session_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_ideas_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_wildcards: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          session_id: string
+          text: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          session_id: string
+          text: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_wildcards_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
