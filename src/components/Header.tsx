@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { Layers } from 'lucide-react';
+import { Layers, Shield, ShieldOff } from 'lucide-react';
 import { SessionPanel } from './SessionPanel';
 import { Session } from '@/hooks/useSession';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   session?: Session | null;
@@ -10,6 +12,8 @@ interface HeaderProps {
   onCreateSession?: (name: string) => Promise<Session | null>;
   onJoinSession?: (code: string) => Promise<Session | null>;
   onLeaveSession?: () => void;
+  isModeratorMode?: boolean;
+  onToggleModeratorMode?: () => void;
 }
 
 export function Header({
@@ -19,6 +23,8 @@ export function Header({
   onCreateSession,
   onJoinSession,
   onLeaveSession,
+  isModeratorMode = false,
+  onToggleModeratorMode,
 }: HeaderProps) {
   return (
     <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -39,16 +45,42 @@ export function Header({
             </div>
           </div>
 
-          {onCreateSession && onJoinSession && onLeaveSession && (
-            <SessionPanel
-              session={session ?? null}
-              participantCount={participantCount}
-              isLoading={isLoading}
-              onCreateSession={onCreateSession}
-              onJoinSession={onJoinSession}
-              onLeaveSession={onLeaveSession}
-            />
-          )}
+          <div className="flex items-center gap-3">
+            {onToggleModeratorMode && (
+              <Button
+                variant={isModeratorMode ? 'default' : 'outline'}
+                size="sm"
+                onClick={onToggleModeratorMode}
+                className={cn(
+                  'gap-2',
+                  isModeratorMode && 'bg-amber-500 hover:bg-amber-600 text-white'
+                )}
+              >
+                {isModeratorMode ? (
+                  <>
+                    <Shield className="w-4 h-4" />
+                    Moderator
+                  </>
+                ) : (
+                  <>
+                    <ShieldOff className="w-4 h-4" />
+                    Moderator
+                  </>
+                )}
+              </Button>
+            )}
+
+            {onCreateSession && onJoinSession && onLeaveSession && (
+              <SessionPanel
+                session={session ?? null}
+                participantCount={participantCount}
+                isLoading={isLoading}
+                onCreateSession={onCreateSession}
+                onJoinSession={onJoinSession}
+                onLeaveSession={onLeaveSession}
+              />
+            )}
+          </div>
         </div>
       </div>
     </header>

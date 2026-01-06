@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Category, categoryLabels, categoryIcons } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
@@ -22,6 +22,9 @@ interface CategorySectionProps {
   onFilterChange: (filter: FilterMode) => void;
   onAddWildcard: (text: string, category: Category) => void;
   onRemoveWildcard: (id: string) => void;
+  isModeratorMode?: boolean;
+  onEditCard?: (card: Card) => void;
+  hasOverride?: (cardId: string) => boolean;
 }
 
 const categoryBorderColors: Record<Category, string> = {
@@ -45,6 +48,9 @@ export function CategorySection({
   onFilterChange,
   onAddWildcard,
   onRemoveWildcard,
+  isModeratorMode = false,
+  onEditCard,
+  hasOverride,
 }: CategorySectionProps) {
   const [newCardText, setNewCardText] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -140,7 +146,10 @@ export function CategorySection({
               card={card}
               size="sm"
               delay={index * 0.03}
-              onRemove={card.isWildcard ? () => onRemoveWildcard(card.id) : undefined}
+              onRemove={card.isWildcard && !isModeratorMode ? () => onRemoveWildcard(card.id) : undefined}
+              onEdit={onEditCard ? () => onEditCard(card) : undefined}
+              isModeratorMode={isModeratorMode}
+              hasOverride={hasOverride?.(card.id)}
             />
           ))}
         </AnimatePresence>

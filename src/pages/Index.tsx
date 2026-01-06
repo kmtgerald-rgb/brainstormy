@@ -7,8 +7,10 @@ import { ShuffleArea } from '@/components/ShuffleArea';
 import { TwistModal } from '@/components/TwistModal';
 import { IdeaBoard } from '@/components/IdeaBoard';
 import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
+import { EditCardDialog } from '@/components/EditCardDialog';
 import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
+import { useModerator } from '@/hooks/useModerator';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -43,6 +45,15 @@ const Index = () => {
     deleteWildcard: deleteSessionWildcard,
   } = useSession();
 
+  const {
+    isModeratorMode,
+    toggleModeratorMode,
+    updateCardText,
+    resetCardText,
+    getCardText,
+    hasOverride,
+  } = useModerator();
+
   const [categoryFilters, setCategoryFilters] = useState<Record<Category, FilterMode>>({
     insight: 'all',
     asset: 'all',
@@ -51,6 +62,18 @@ const Index = () => {
   });
 
   const [isTwistOpen, setIsTwistOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<Card | null>(null);
+
+  // Apply card overrides to cards
+  const applyOverrides = useCallback(
+    (cards: Card[]): Card[] => {
+      return cards.map((card) => ({
+        ...card,
+        text: getCardText(card.id, card.text),
+      }));
+    },
+    [getCardText]
+  );
 
   // Combine default cards with session wildcards when in a session
   const getCardsForCategory = useCallback(
@@ -68,19 +91,22 @@ const Index = () => {
           }));
 
         if (filter === 'wildcards') {
-          return [...baseCards.filter((c) => c.isWildcard), ...sessionCards];
+          return applyOverrides([...baseCards.filter((c) => c.isWildcard), ...sessionCards]);
         }
-        return [...baseCards, ...sessionCards];
+        return applyOverrides([...baseCards, ...sessionCards]);
       }
 
-      return baseCards;
+      return applyOverrides(baseCards);
     },
-    [getCardsByCategory, session, sessionWildcards]
+    [getCardsByCategory, session, sessionWildcards, applyOverrides]
   );
 
-  // All cards for shuffling (include session wildcards)
+  // All cards for shuffling (include session wildcards) with overrides applied
   const allCardsForShuffle = useMemo(() => {
-    const base = [...defaultCards, ...localWildcards];
+    const base = [...defaultCards, ...localWildcards].map((card) => ({
+      ...card,
+      text: getCardText(card.id, card.text),
+    }));
     if (session) {
       const sessionCards = sessionWildcards.map((w) => ({
         id: w.id,
@@ -91,7 +117,30 @@ const Index = () => {
       return [...base, ...sessionCards];
     }
     return base;
-  }, [localWildcards, session, sessionWildcards]);
+  }, [localWildcards, session, sessionWildcards, getCardText]);
+
+  // Find original text for a card
+  const getOriginalText = useCallback(
+    (cardId: string): string | undefined => {
+      const defaultCard = defaultCards.find((c) => c.id === cardId);
+      if (defaultCard) return defaultCard.text;
+      const wildcardCard = localWildcards.find((c) => c.id === cardId);
+      return wildcardCard?.text;
+    },
+    [localWildcards]
+  );
+
+  const handleEditCard = (card: Card) => {
+    setEditingCard(card);
+  };
+
+  const handleSaveCardEdit = (cardId: string, newText: string) => {
+    updateCardText(cardId, newText);
+  };
+
+  const handleResetCard = (cardId: string) => {
+    resetCardText(cardId);
+  };
 
   const handleFilterChange = (category: Category, filter: FilterMode) => {
     setCategoryFilters((prev) => ({ ...prev, [category]: filter }));
@@ -165,6 +214,8 @@ const Index = () => {
         onCreateSession={createSession}
         onJoinSession={joinSession}
         onLeaveSession={leaveSession}
+        isModeratorMode={isModeratorMode}
+        onToggleModeratorMode={toggleModeratorMode}
       />
 
       <main className="container mx-auto px-4 py-8">
@@ -219,6 +270,14 @@ const Index = () => {
                 </p>
               </div>
 
+              {isModeratorMode && (
+                <div className="flex justify-center">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full text-sm">
+                    ✏️ Moderator Mode: Click any card to edit
+                  </span>
+                </div>
+              )}
+
               {categories.map((category) => (
                 <CategorySection
                   key={category}
@@ -228,6 +287,9 @@ const Index = () => {
                   onFilterChange={(filter) => handleFilterChange(category, filter)}
                   onAddWildcard={handleAddWildcard}
                   onRemoveWildcard={handleRemoveWildcard}
+                  isModeratorMode={isModeratorMode}
+                  onEditCard={handleEditCard}
+                  hasOverride={hasOverride}
                 />
               ))}
             </motion.div>
@@ -255,6 +317,16 @@ const Index = () => {
         selectedCards={selectedCards}
         onSave={handleSaveIdea}
         isCollaborative={!!session}
+      />
+
+      <EditCardDialog
+        card={editingCard}
+        isOpen={!!editingCard}
+        onClose={() => setEditingCard(null)}
+        onSave={handleSaveCardEdit}
+        onReset={handleResetCard}
+        hasOverride={editingCard ? hasOverride(editingCard.id) : false}
+        originalText={editingCard ? getOriginalText(editingCard.id) : undefined}
       />
     </div>
   );
