@@ -8,6 +8,8 @@ import { TwistModal } from '@/components/TwistModal';
 import { IdeaBoard } from '@/components/IdeaBoard';
 import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
 import { EditCardDialog } from '@/components/EditCardDialog';
+import { ProblemStatementEditor } from '@/components/ProblemStatementEditor';
+import { ProblemStatementBanner } from '@/components/ProblemStatementBanner';
 import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
@@ -44,6 +46,7 @@ const Index = () => {
     deleteIdea: deleteSessionIdea,
     addWildcard: addSessionWildcard,
     deleteWildcard: deleteSessionWildcard,
+    updateProblemStatement,
   } = useSession();
 
   const {
@@ -65,6 +68,7 @@ const Index = () => {
   const [isTwistOpen, setIsTwistOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
 
   // Apply card overrides to cards
   const applyOverrides = useCallback(
@@ -218,9 +222,23 @@ const Index = () => {
         onLeaveSession={leaveSession}
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
+        onSetFocus={() => setIsFocusEditorOpen(true)}
       />
 
       <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
+        {/* Problem Statement Banner */}
+        {session?.problem_statement && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <ProblemStatementBanner
+              statement={session.problem_statement}
+              isModeratorMode={isModeratorMode}
+              onEdit={() => setIsFocusEditorOpen(true)}
+            />
+          </motion.div>
+        )}
         {/* Shuffle Canvas - Hero */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -336,6 +354,14 @@ const Index = () => {
         onReset={handleResetCard}
         hasOverride={editingCard ? hasOverride(editingCard.id) : false}
         originalText={editingCard ? getOriginalText(editingCard.id) : undefined}
+      />
+
+      <ProblemStatementEditor
+        isOpen={isFocusEditorOpen}
+        onClose={() => setIsFocusEditorOpen(false)}
+        currentContext={session?.problem_context ?? null}
+        currentStatement={session?.problem_statement ?? null}
+        onSave={updateProblemStatement}
       />
     </div>
   );

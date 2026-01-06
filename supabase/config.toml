@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.explain-card]
 verify_jwt = false
+
+[functions.refine-problem-statement]
+verify_jwt = false
