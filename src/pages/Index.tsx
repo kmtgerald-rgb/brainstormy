@@ -56,6 +56,9 @@ const Index = () => {
     resetCardText,
     getCardText,
     hasOverride,
+    localProblemContext,
+    localProblemStatement,
+    updateLocalProblemStatement,
   } = useModerator();
 
   const [categoryFilters, setCategoryFilters] = useState<Record<Category, FilterMode>>({
@@ -227,13 +230,13 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
         {/* Problem Statement Banner */}
-        {session?.problem_statement && (
+        {(session?.problem_statement || localProblemStatement) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <ProblemStatementBanner
-              statement={session.problem_statement}
+              statement={session?.problem_statement || localProblemStatement}
               isModeratorMode={isModeratorMode}
               onEdit={() => setIsFocusEditorOpen(true)}
             />
@@ -359,9 +362,9 @@ const Index = () => {
       <ProblemStatementEditor
         isOpen={isFocusEditorOpen}
         onClose={() => setIsFocusEditorOpen(false)}
-        currentContext={session?.problem_context ?? null}
-        currentStatement={session?.problem_statement ?? null}
-        onSave={updateProblemStatement}
+        currentContext={session?.problem_context ?? localProblemContext}
+        currentStatement={session?.problem_statement ?? localProblemStatement}
+        onSave={session ? updateProblemStatement : async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
       />
     </div>
   );

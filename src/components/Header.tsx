@@ -36,7 +36,7 @@ export function Header({
           </div>
 
           <div className="flex items-center gap-3">
-            {isModeratorMode && session && onSetFocus && (
+            {isModeratorMode && onSetFocus && (
               <Button
                 variant="outline"
                 size="sm"
