@@ -16,10 +16,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useCardRegeneration } from '@/hooks/useCardRegeneration';
 
 interface CategorySectionProps {
   category: Category;
   cards: Card[];
+  allCards: Card[];
   filter: FilterMode;
   onFilterChange: (filter: FilterMode) => void;
   onAddWildcard: (text: string, category: Category) => void;
@@ -31,6 +33,7 @@ interface CategorySectionProps {
   searchTerm?: string;
   onInlineEdit?: (cardId: string, newText: string) => void;
   onResetCard?: (cardId: string) => void;
+  problemStatement?: string | null;
 }
 
 const categoryAccentColors: Record<Category, string> = {
@@ -43,6 +46,7 @@ const categoryAccentColors: Record<Category, string> = {
 export function CategorySection({
   category,
   cards,
+  allCards,
   filter,
   onFilterChange,
   onAddWildcard,
@@ -54,15 +58,25 @@ export function CategorySection({
   searchTerm = '',
   onInlineEdit,
   onResetCard,
+  problemStatement,
 }: CategorySectionProps) {
   const [newCardText, setNewCardText] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { isRegenerating, regenerateCard } = useCardRegeneration();
 
   const handleAddCard = () => {
     if (newCardText.trim()) {
       onAddWildcard(newCardText.trim(), category);
       setNewCardText('');
       setIsDialogOpen(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    const newCard = await regenerateCard(category, allCards, problemStatement);
+    if (newCard) {
+      // Add generated card as a wildcard
+      onAddWildcard(newCard.text, category);
     }
   };
 
@@ -85,7 +99,7 @@ export function CategorySection({
       return `No cards match "${searchTerm}".`;
     }
     if (filter === 'wildcards') {
-      return "No wildcards yet. Click 'Add' to create your first custom card.";
+      return "No wildcards yet. Click 'Add' or 'Generate' to create custom cards.";
     }
     return 'No cards in this filter. Try switching to "All" or add some wildcards.';
   };
@@ -147,13 +161,23 @@ export function CategorySection({
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCard()}
                   className="border-border"
                 />
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
+                <div className="flex justify-between items-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating[category]}
+                    className="gap-2 font-mono text-[10px] uppercase tracking-wider"
+                  >
+                    {isRegenerating[category] ? 'Generating...' : '✨ AI Generate'}
                   </Button>
-                  <Button onClick={handleAddCard} disabled={!newCardText.trim()}>
-                    Add Card
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddCard} disabled={!newCardText.trim()}>
+                      Add Card
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
@@ -165,12 +189,15 @@ export function CategorySection({
         <CardListView
           cards={filteredCards}
           category={category}
+          allCards={allCards}
           isModeratorMode={isModeratorMode}
           onRemoveWildcard={onRemoveWildcard}
           hasOverride={hasOverride}
           onInlineEdit={onInlineEdit}
           onResetCard={onResetCard}
           searchTerm={searchTerm}
+          onAddWildcard={onAddWildcard}
+          problemStatement={problemStatement}
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
