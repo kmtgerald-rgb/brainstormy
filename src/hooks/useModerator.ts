@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 
 const MODERATOR_KEY = 'mashup-moderator-mode';
 const CARD_OVERRIDES_KEY = 'mashup-card-overrides';
+const PROBLEM_CONTEXT_KEY = 'mashup-local-problem-context';
+const PROBLEM_STATEMENT_KEY = 'mashup-local-problem-statement';
 
 export interface CardOverride {
   id: string;
@@ -17,6 +19,14 @@ export function useModerator() {
   const [cardOverrides, setCardOverrides] = useState<Record<string, string>>(() => {
     const stored = localStorage.getItem(CARD_OVERRIDES_KEY);
     return stored ? JSON.parse(stored) : {};
+  });
+
+  const [localProblemContext, setLocalProblemContext] = useState<string | null>(() => {
+    return localStorage.getItem(PROBLEM_CONTEXT_KEY);
+  });
+
+  const [localProblemStatement, setLocalProblemStatement] = useState<string | null>(() => {
+    return localStorage.getItem(PROBLEM_STATEMENT_KEY);
   });
 
   const toggleModeratorMode = useCallback(() => {
@@ -63,6 +73,21 @@ export function useModerator() {
     [cardOverrides]
   );
 
+  const updateLocalProblemStatement = useCallback((context: string, statement: string) => {
+    if (context) {
+      localStorage.setItem(PROBLEM_CONTEXT_KEY, context);
+    } else {
+      localStorage.removeItem(PROBLEM_CONTEXT_KEY);
+    }
+    if (statement) {
+      localStorage.setItem(PROBLEM_STATEMENT_KEY, statement);
+    } else {
+      localStorage.removeItem(PROBLEM_STATEMENT_KEY);
+    }
+    setLocalProblemContext(context || null);
+    setLocalProblemStatement(statement || null);
+  }, []);
+
   return {
     isModeratorMode,
     toggleModeratorMode,
@@ -72,5 +97,8 @@ export function useModerator() {
     getCardText,
     hasOverride,
     cardOverrides,
+    localProblemContext,
+    localProblemStatement,
+    updateLocalProblemStatement,
   };
 }
