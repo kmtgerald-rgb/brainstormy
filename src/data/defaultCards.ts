@@ -14,11 +14,11 @@ export const categoryLabels: Record<Category, string> = {
   random: 'Random / Misc',
 };
 
-export const categoryIcons: Record<Category, string> = {
-  insight: '💡',
-  asset: '🏛️',
-  tech: '⚡',
-  random: '🎲',
+export const categoryShortLabels: Record<Category, string> = {
+  insight: 'Insight',
+  asset: 'Asset',
+  tech: 'Tech',
+  random: 'Random',
 };
 
 export const defaultCards: Card[] = [

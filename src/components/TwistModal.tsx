@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Save } from 'lucide-react';
-import { Card, Category, categoryLabels } from '@/data/defaultCards';
+import { Check, ArrowRight } from 'lucide-react';
+import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 
 interface TwistModalProps {
@@ -39,7 +37,7 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
         setDescription('');
         setAuthor('');
         onClose();
-      }, 1500);
+      }, 1200);
     }
   };
 
@@ -52,43 +50,26 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <motion.span
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ duration: 0.5, repeat: 2 }}
-            >
-              <Sparkles className="w-6 h-6 text-category-random" />
-            </motion.span>
-            TWIST Moment!
-            {isCollaborative && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                (shared with session)
-              </span>
-            )}
-          </DialogTitle>
-        </DialogHeader>
-
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border">
         <AnimatePresence mode="wait">
           {showSuccess ? (
             <motion.div
               key="success"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="py-12 text-center"
+              className="py-20 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-category-insight via-category-tech to-category-random flex items-center justify-center"
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="w-16 h-16 mx-auto mb-6 rounded-full bg-foreground flex items-center justify-center"
               >
-                <Sparkles className="w-10 h-10 text-primary-foreground" />
+                <Check className="w-8 h-8 text-background" />
               </motion.div>
-              <h3 className="font-display text-2xl font-bold">
-                {isCollaborative ? 'Idea Shared!' : 'Idea Saved!'}
+              <h3 className="font-serif text-2xl">
+                {isCollaborative ? 'Idea shared.' : 'Idea captured.'}
               </h3>
             </motion.div>
           ) : (
@@ -97,68 +78,89 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-6"
+              className="space-y-8 p-8"
             >
+              {/* Header */}
+              <div className="space-y-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Idea Canvas
+                </span>
+                <h2 className="font-serif text-3xl">Combine into an idea.</h2>
+                {isCollaborative && (
+                  <p className="text-sm text-muted-foreground">
+                    This idea will be shared with your session.
+                  </p>
+                )}
+              </div>
+
+              {/* Selected Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {categories.map((category, index) => (
                   <motion.div
                     key={category}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
                     {selectedCards[category] && (
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          {categoryLabels[category]}
-                        </span>
-                        <MashupCard card={selectedCards[category]!} size="sm" animate={false} />
-                      </div>
+                      <MashupCard card={selectedCards[category]!} size="sm" animate={false} />
                     )}
                   </motion.div>
                 ))}
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Idea Title *</label>
+              {/* Form */}
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Name your idea
+                  </label>
                   <Input
-                    placeholder="Give your idea a catchy name..."
+                    placeholder="A compelling name..."
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="text-lg"
+                    className="text-lg font-serif h-12 border-border"
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
+                <div className="space-y-2">
+                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Describe the connection
+                  </label>
                   <Textarea
-                    placeholder="Describe your idea..."
+                    placeholder="How do these forces combine?"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
+                    className="border-border resize-none"
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Your Name {isCollaborative ? '' : '(optional)'}
+                <div className="space-y-2">
+                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Your name {!isCollaborative && '(optional)'}
                   </label>
                   <Input
-                    placeholder="Your name"
+                    placeholder="Author"
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
+                    className="border-border"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={handleClose}>
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="ghost" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={!title.trim()} className="gap-2">
-                  <Save className="w-4 h-4" />
-                  {isCollaborative ? 'Share Idea' : 'Save Idea'}
+                <Button 
+                  onClick={handleSave} 
+                  disabled={!title.trim()} 
+                  className="gap-2 px-6"
+                >
+                  Capture
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </motion.div>

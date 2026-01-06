@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Layers, Lightbulb, Shuffle } from 'lucide-react';
+import { Layers, Lightbulb } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { CategorySection } from '@/components/CategorySection';
 import { ShuffleArea } from '@/components/ShuffleArea';
@@ -12,7 +12,8 @@ import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
@@ -63,6 +64,7 @@ const Index = () => {
 
   const [isTwistOpen, setIsTwistOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
   // Apply card overrides to cards
   const applyOverrides = useCallback(
@@ -218,98 +220,105 @@ const Index = () => {
         onToggleModeratorMode={toggleModeratorMode}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="shuffle" className="space-y-8">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-            <TabsTrigger value="shuffle" className="gap-2">
-              <Shuffle className="w-4 h-4" />
-              Shuffle
-            </TabsTrigger>
-            <TabsTrigger value="library" className="gap-2">
-              <Layers className="w-4 h-4" />
-              Library
-            </TabsTrigger>
-            <TabsTrigger value="ideas" className="gap-2">
-              <Lightbulb className="w-4 h-4" />
-              Ideas
-              {displayedIdeas.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-foreground text-background rounded-full">
-                  {displayedIdeas.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+      <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
+        {/* Shuffle Canvas - Hero */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <ShuffleArea
+            selectedCards={selectedCards}
+            onShuffle={handleShuffle}
+            onTwist={() => setIsTwistOpen(true)}
+            onClear={clearSelection}
+          />
+        </motion.section>
 
-          <TabsContent value="shuffle">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <ShuffleArea
-                selectedCards={selectedCards}
-                onShuffle={handleShuffle}
-                onTwist={() => setIsTwistOpen(true)}
-                onClear={clearSelection}
-              />
-            </motion.div>
-          </TabsContent>
-
-          <TabsContent value="library">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-12"
-            >
-              <div className="text-center space-y-2">
-                <h2 className="font-display text-3xl font-bold">Card Library</h2>
-                <p className="text-muted-foreground">
+        {/* Secondary Navigation */}
+        <div className="flex justify-center gap-4 border-t border-border pt-12">
+          <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2 font-mono text-xs uppercase tracking-wider">
+                <Layers className="w-4 h-4" />
+                Browse Library
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+              <SheetHeader className="mb-8">
+                <SheetTitle className="font-serif text-2xl">Card Library</SheetTitle>
+                <p className="text-sm text-muted-foreground">
                   Browse all cards or create your own wildcards
                   {session && ' (shared with session)'}
                 </p>
+                {isModeratorMode && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-600 text-xs font-mono uppercase tracking-wider mt-2">
+                    Moderator Mode: Click any card to edit
+                  </div>
+                )}
+              </SheetHeader>
+              
+              <div className="space-y-10">
+                {categories.map((category) => (
+                  <CategorySection
+                    key={category}
+                    category={category}
+                    cards={getCardsForCategory(category, categoryFilters[category])}
+                    filter={categoryFilters[category]}
+                    onFilterChange={(filter) => handleFilterChange(category, filter)}
+                    onAddWildcard={handleAddWildcard}
+                    onRemoveWildcard={handleRemoveWildcard}
+                    isModeratorMode={isModeratorMode}
+                    onEditCard={handleEditCard}
+                    hasOverride={hasOverride}
+                  />
+                ))}
               </div>
+            </SheetContent>
+          </Sheet>
 
-              {isModeratorMode && (
-                <div className="flex justify-center">
-                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full text-sm">
-                    ✏️ Moderator Mode: Click any card to edit
-                  </span>
-                </div>
-              )}
+          <Button 
+            variant="outline" 
+            className="gap-2 font-mono text-xs uppercase tracking-wider"
+            onClick={() => {
+              const ideasSection = document.getElementById('ideas-section');
+              ideasSection?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            <Lightbulb className="w-4 h-4" />
+            View Ideas
+            {displayedIdeas.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
+                {displayedIdeas.length}
+              </span>
+            )}
+          </Button>
+        </div>
 
-              {categories.map((category) => (
-                <CategorySection
-                  key={category}
-                  category={category}
-                  cards={getCardsForCategory(category, categoryFilters[category])}
-                  filter={categoryFilters[category]}
-                  onFilterChange={(filter) => handleFilterChange(category, filter)}
-                  onAddWildcard={handleAddWildcard}
-                  onRemoveWildcard={handleRemoveWildcard}
-                  isModeratorMode={isModeratorMode}
-                  onEditCard={handleEditCard}
-                  hasOverride={hasOverride}
-                />
-              ))}
-            </motion.div>
-          </TabsContent>
-
-          <TabsContent value="ideas">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              {session ? (
-                <CollaborativeIdeaBoard ideas={sessionIdeas} onDelete={handleDeleteIdea} />
-              ) : (
-                <IdeaBoard ideas={localSavedIdeas} onDelete={handleDeleteIdea} />
-              )}
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+        {/* Ideas Section */}
+        <motion.section
+          id="ideas-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="border-t border-border pt-12"
+        >
+          {session ? (
+            <CollaborativeIdeaBoard ideas={sessionIdeas} onDelete={handleDeleteIdea} />
+          ) : (
+            <IdeaBoard ideas={localSavedIdeas} onDelete={handleDeleteIdea} />
+          )}
+        </motion.section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-8 mt-16">
+        <div className="container mx-auto px-4 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            Don't evaluate yet. Combine.
+          </p>
+        </div>
+      </footer>
 
       <TwistModal
         isOpen={isTwistOpen}

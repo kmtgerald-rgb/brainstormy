@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Category, categoryLabels, categoryIcons } from '@/data/defaultCards';
+import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { FilterMode } from '@/hooks/useCards';
 import { Button } from '@/components/ui/button';
@@ -27,14 +27,7 @@ interface CategorySectionProps {
   hasOverride?: (cardId: string) => boolean;
 }
 
-const categoryBorderColors: Record<Category, string> = {
-  insight: 'border-category-insight',
-  asset: 'border-category-asset',
-  tech: 'border-category-tech',
-  random: 'border-category-random',
-};
-
-const categoryBgColors: Record<Category, string> = {
+const categoryAccentColors: Record<Category, string> = {
   insight: 'bg-category-insight',
   asset: 'bg-category-asset',
   tech: 'bg-category-tech',
@@ -70,32 +63,31 @@ export function CategorySection({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              'w-10 h-10 rounded-lg flex items-center justify-center text-xl',
-              categoryBgColors[category],
-              'text-primary-foreground'
+              'w-1 h-8 rounded-full',
+              categoryAccentColors[category]
             )}
-          >
-            {categoryIcons[category]}
-          </div>
+          />
           <div>
-            <h3 className="font-display text-lg font-semibold">{categoryLabels[category]}</h3>
-            <p className="text-sm text-muted-foreground">{cards.length} cards</p>
+            <h3 className="font-serif text-xl">{categoryLabels[category]}</h3>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              {cards.length} cards
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border overflow-hidden">
+          <div className="flex border border-border overflow-hidden">
             {filterButtons.map((btn) => (
               <button
                 key={btn.value}
                 onClick={() => onFilterChange(btn.value)}
                 className={cn(
-                  'px-3 py-1.5 text-sm font-medium transition-colors',
+                  'px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors',
                   filter === btn.value
                     ? 'bg-foreground text-background'
                     : 'bg-background text-foreground hover:bg-muted'
@@ -108,14 +100,16 @@ export function CategorySection({
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className={cn('gap-1', categoryBorderColors[category])}>
-                <Plus className="w-4 h-4" />
+              <Button size="sm" variant="outline" className="gap-1 font-mono text-[10px] uppercase tracking-wider">
+                <Plus className="w-3.5 h-3.5" />
                 Add
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="border-border">
               <DialogHeader>
-                <DialogTitle>Add Wildcard to {categoryLabels[category]}</DialogTitle>
+                <DialogTitle className="font-serif text-xl">
+                  Add Wildcard to {categoryLabels[category]}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <Input
@@ -123,9 +117,10 @@ export function CategorySection({
                   value={newCardText}
                   onChange={(e) => setNewCardText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCard()}
+                  className="border-border"
                 />
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
                   <Button onClick={handleAddCard} disabled={!newCardText.trim()}>
@@ -145,7 +140,7 @@ export function CategorySection({
               key={card.id}
               card={card}
               size="sm"
-              delay={index * 0.03}
+              delay={index * 0.02}
               onRemove={card.isWildcard && !isModeratorMode ? () => onRemoveWildcard(card.id) : undefined}
               onEdit={onEditCard ? () => onEditCard(card) : undefined}
               isModeratorMode={isModeratorMode}
@@ -156,8 +151,8 @@ export function CategorySection({
       </div>
 
       {cards.length === 0 && (
-        <p className="text-center text-muted-foreground py-8">
-          No cards in this filter. Try switching to "All" or add some wildcards!
+        <p className="text-center text-muted-foreground py-12">
+          No cards in this filter. Try switching to "All" or add some wildcards.
         </p>
       )}
     </div>

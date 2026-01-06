@@ -9,13 +9,14 @@ export default {
       center: true,
       padding: "2rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1200px",
       },
     },
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
+        serif: ['Instrument Serif', 'serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -87,13 +88,12 @@ export default {
           to: { height: "0" },
         },
         "twist-pulse": {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.05)" },
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.7" },
         },
-        "card-flip": {
-          "0%": { transform: "rotateY(0deg)" },
-          "50%": { transform: "rotateY(90deg)" },
-          "100%": { transform: "rotateY(0deg)" },
+        "card-reveal": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
@@ -103,8 +103,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "twist-pulse": "twist-pulse 0.6s ease-in-out",
-        "card-flip": "card-flip 0.5s ease-in-out",
+        "twist-pulse": "twist-pulse 2s ease-in-out infinite",
+        "card-reveal": "card-reveal 0.4s ease-out",
         shimmer: "shimmer 2s linear infinite",
       },
     },

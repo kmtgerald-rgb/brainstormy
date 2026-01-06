@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { Card, categoryLabels, categoryIcons } from '@/data/defaultCards';
+import { Card, categoryLabels, categoryShortLabels } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,6 +10,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+
+const categoryTextStyles = {
+  insight: 'text-category-insight',
+  asset: 'text-category-asset',
+  tech: 'text-category-tech',
+  random: 'text-category-random',
+};
 
 interface EditCardDialogProps {
   card: Card | null;
@@ -56,11 +64,13 @@ export function EditCardDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span>{categoryIcons[card.category]}</span>
-            Edit {categoryLabels[card.category]} Card
+          <DialogTitle className="flex items-center gap-2 font-serif text-xl">
+            <span className={cn('font-mono text-xs uppercase tracking-wider', categoryTextStyles[card.category])}>
+              {categoryShortLabels[card.category]}
+            </span>
+            Edit Card
           </DialogTitle>
           <DialogDescription>
             {card.isWildcard ? 'Edit this wildcard' : 'Override this default card text'}
@@ -72,6 +82,7 @@ export function EditCardDialog({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            className="border-border"
           />
           {hasOverride && originalText && (
             <p className="text-sm text-muted-foreground">
@@ -88,7 +99,7 @@ export function EditCardDialog({
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="ghost" onClick={onClose}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={!text.trim()}>
