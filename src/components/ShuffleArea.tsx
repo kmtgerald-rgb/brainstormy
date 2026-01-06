@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Sparkles, RotateCcw } from 'lucide-react';
+import { Shuffle, Sparkles, RotateCcw, Wand2, Loader2, X } from 'lucide-react';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAISuggestion } from '@/hooks/useAISuggestion';
 
 interface ShuffleAreaProps {
   selectedCards: Record<Category, Card | null>;
@@ -27,14 +28,26 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
   const [shuffleKey, setShuffleKey] = useState(0);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
+  
+  const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
 
   const handleShuffle = () => {
     setIsShuffling(true);
+    clearSuggestion();
     setTimeout(() => {
       onShuffle();
       setShuffleKey((k) => k + 1);
       setIsShuffling(false);
     }, 300);
+  };
+
+  const handleClear = () => {
+    clearSuggestion();
+    onClear();
+  };
+
+  const handleGetSuggestion = () => {
+    getSuggestion(selectedCards);
   };
 
   return (
@@ -79,6 +92,38 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
         </AnimatePresence>
       </div>
 
+      {/* AI Suggestion Display */}
+      <AnimatePresence>
+        {suggestion && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="relative mx-auto max-w-2xl p-6 rounded-xl bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 border border-primary/20"
+          >
+            <button
+              onClick={clearSuggestion}
+              className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted/50 transition-colors"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <Wand2 className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3 className="font-display text-lg font-bold text-foreground">
+                  {suggestion.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {suggestion.description}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex justify-center gap-4 flex-wrap">
         <Button
           size="lg"
@@ -91,24 +136,47 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
         </Button>
 
         {hasAllCards && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Button
-              size="lg"
-              onClick={onTwist}
-              className="gap-2 px-8 bg-gradient-to-r from-category-insight via-category-tech to-category-random text-primary-foreground hover:opacity-90"
+          <>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
-              <Sparkles className="w-5 h-5" />
-              TWIST!
-            </Button>
-          </motion.div>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleGetSuggestion}
+                disabled={isAILoading}
+                className="gap-2 px-6"
+              >
+                {isAILoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Wand2 className="w-5 h-5" />
+                )}
+                {isAILoading ? 'Thinking...' : 'AI Suggest'}
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              <Button
+                size="lg"
+                onClick={onTwist}
+                className="gap-2 px-8 bg-gradient-to-r from-category-insight via-category-tech to-category-random text-primary-foreground hover:opacity-90"
+              >
+                <Sparkles className="w-5 h-5" />
+                TWIST!
+              </Button>
+            </motion.div>
+          </>
         )}
 
         {hasAnyCard && (
-          <Button size="lg" variant="outline" onClick={onClear} className="gap-2">
+          <Button size="lg" variant="outline" onClick={handleClear} className="gap-2">
             <RotateCcw className="w-4 h-4" />
             Clear
           </Button>
