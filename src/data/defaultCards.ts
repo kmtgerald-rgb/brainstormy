@@ -5,6 +5,7 @@ export interface Card {
   text: string;
   category: Category;
   isWildcard: boolean;
+  isGenerated?: boolean;
 }
 
 export const categoryLabels: Record<Category, string> = {
