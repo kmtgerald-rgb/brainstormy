@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion';
-import { Layers, Shield, ShieldOff } from 'lucide-react';
+import { Shield, ShieldOff } from 'lucide-react';
 import { SessionPanel } from './SessionPanel';
 import { Session } from '@/hooks/useSession';
 import { Button } from '@/components/ui/button';
@@ -27,44 +26,33 @@ export function Header({
   onToggleModeratorMode,
 }: HeaderProps) {
   return (
-    <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-border/50 bg-background sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <motion.div
-              initial={{ rotate: -10 }}
-              animate={{ rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-category-insight via-category-tech to-category-random flex items-center justify-center"
-            >
-              <Layers className="w-5 h-5 text-primary-foreground" />
-            </motion.div>
-            <div>
-              <h1 className="font-display text-xl font-bold tracking-tight">Mash-Up Cards</h1>
-              <p className="text-xs text-muted-foreground">Collective Brainstorming</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-2xl tracking-tight">Mash-Up</h1>
           </div>
 
           <div className="flex items-center gap-3">
             {onToggleModeratorMode && (
               <Button
-                variant={isModeratorMode ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
                 onClick={onToggleModeratorMode}
                 className={cn(
-                  'gap-2',
-                  isModeratorMode && 'bg-amber-500 hover:bg-amber-600 text-white'
+                  'gap-2 font-mono text-xs uppercase tracking-wider',
+                  isModeratorMode && 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
                 )}
               >
                 {isModeratorMode ? (
                   <>
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-3.5 h-3.5" />
                     Moderator
                   </>
                 ) : (
                   <>
-                    <ShieldOff className="w-4 h-4" />
-                    Moderator
+                    <ShieldOff className="w-3.5 h-3.5" />
+                    Moderate
                   </>
                 )}
               </Button>
