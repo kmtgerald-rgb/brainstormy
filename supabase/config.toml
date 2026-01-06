@@ -2,3 +2,6 @@ project_id = "uldijwsjvgdskdunoamj"
 
 [functions.suggest-idea]
 verify_jwt = false
+
+[functions.explain-card]
+verify_jwt = false

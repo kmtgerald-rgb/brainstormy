@@ -6,6 +6,7 @@ import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAISuggestion } from '@/hooks/useAISuggestion';
+import { useCardExplanation } from '@/hooks/useCardExplanation';
 
 interface ShuffleAreaProps {
   selectedCards: Record<Category, Card | null>;
@@ -17,10 +18,10 @@ interface ShuffleAreaProps {
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
 const categoryAccentStyles: Record<Category, string> = {
-  insight: 'border-l-category-insight',
-  asset: 'border-l-category-asset',
-  tech: 'border-l-category-tech',
-  random: 'border-l-category-random',
+  insight: 'border-l-[hsl(var(--category-insight))]',
+  asset: 'border-l-[hsl(var(--category-asset))]',
+  tech: 'border-l-[hsl(var(--category-tech))]',
+  random: 'border-l-[hsl(var(--category-random))]',
 };
 
 export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: ShuffleAreaProps) {
@@ -30,6 +31,7 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   
   const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
+  const { getExplanation, getState } = useCardExplanation();
 
   const handleShuffle = () => {
     setIsShuffling(true);
@@ -48,6 +50,10 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
 
   const handleGetSuggestion = () => {
     getSuggestion(selectedCards);
+  };
+
+  const handleCardFlip = (card: Card) => {
+    getExplanation(card);
   };
 
   return (
@@ -76,6 +82,10 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
                   size="lg"
                   animate={true}
                   delay={index * 0.08}
+                  flippable={true}
+                  explanation={getState(selectedCards[category]!.id).text}
+                  explanationLoading={getState(selectedCards[category]!.id).loading}
+                  onFlip={() => handleCardFlip(selectedCards[category]!)}
                 />
               ) : (
                 <div

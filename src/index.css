@@ -126,17 +126,22 @@
 }
 
 @layer components {
-  .card-shadow {
-    box-shadow: var(--shadow-card);
-  }
-  
-  .card-shadow-hover {
-    box-shadow: var(--shadow-card-hover);
-  }
-  
-  .card-elevated {
-    box-shadow: var(--shadow-elevated);
-  }
+.card-shadow {
+  box-shadow: var(--shadow-card);
+}
+
+.card-shadow-hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card-elevated {
+  box-shadow: var(--shadow-elevated);
+}
+
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
 
   .font-mono-label {
     font-family: 'JetBrains Mono', monospace;
