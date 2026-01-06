@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Star, X, Pencil, RotateCcw } from 'lucide-react';
-import { Card, Category, categoryTypes, getCardIndex } from '@/data/defaultCards';
+import { Card, Category, categoryIcons } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 
 interface MashupCardProps {
@@ -17,25 +17,18 @@ interface MashupCardProps {
   hasOverride?: boolean;
 }
 
-const typeClasses: Record<Category, string> = {
-  insight: 'dex-card-psychic',
-  asset: 'dex-card-steel',
-  tech: 'dex-card-electric',
-  random: 'dex-card-ghost',
+const categoryStyles: Record<Category, string> = {
+  insight: 'border-category-insight bg-category-insight-light',
+  asset: 'border-category-asset bg-category-asset-light',
+  tech: 'border-category-tech bg-category-tech-light',
+  random: 'border-category-random bg-category-random-light',
 };
 
-const typeBadgeClasses: Record<Category, string> = {
-  insight: 'type-badge-psychic',
-  asset: 'type-badge-steel',
-  tech: 'type-badge-electric',
-  random: 'type-badge-ghost',
-};
-
-const typeTextColors: Record<Category, string> = {
-  insight: 'text-[hsl(var(--type-psychic-glow))]',
-  asset: 'text-[hsl(var(--type-steel-glow))]',
-  tech: 'text-[hsl(var(--type-electric-glow))]',
-  random: 'text-[hsl(var(--type-ghost-glow))]',
+const categoryTextStyles: Record<Category, string> = {
+  insight: 'text-category-insight',
+  asset: 'text-category-asset',
+  tech: 'text-category-tech',
+  random: 'text-category-random',
 };
 
 export function MashupCard({
@@ -52,9 +45,9 @@ export function MashupCard({
   hasOverride = false,
 }: MashupCardProps) {
   const sizeClasses = {
-    sm: 'p-3 min-h-[100px]',
-    md: 'p-4 min-h-[140px]',
-    lg: 'p-5 min-h-[180px]',
+    sm: 'p-3 min-h-[80px]',
+    md: 'p-4 min-h-[120px]',
+    lg: 'p-6 min-h-[160px]',
   };
 
   const textSizes = {
@@ -66,23 +59,17 @@ export function MashupCard({
   const CardContent = (
     <div
       className={cn(
-        'dex-card relative transition-all duration-300',
-        typeClasses[card.category],
+        'relative rounded-lg border-2 transition-all duration-200 card-shadow',
+        categoryStyles[card.category],
         card.isWildcard && 'border-dashed',
-        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
-        hasOverride && 'ring-1 ring-amber-500/50',
-        (onClick || isModeratorMode) && 'cursor-pointer hover:scale-[1.02] hover:card-shadow-hover',
+        isSelected && 'ring-2 ring-foreground ring-offset-2',
+        hasOverride && 'ring-1 ring-amber-500',
+        onClick && 'cursor-pointer hover:card-shadow-hover hover:scale-[1.02]',
+        isModeratorMode && 'cursor-pointer hover:card-shadow-hover hover:scale-[1.02]',
         sizeClasses[size]
       )}
       onClick={isModeratorMode ? onEdit : onClick}
     >
-      {/* Index number - top left */}
-      <div className="absolute top-2 left-3">
-        <span className="card-index font-mono-display text-[10px]">
-          {getCardIndex(card)}
-        </span>
-      </div>
-
       {/* Top-right icons */}
       <div className="absolute top-2 right-2 flex items-center gap-1">
         {hasOverride && (
@@ -92,13 +79,13 @@ export function MashupCard({
         )}
         {card.isWildcard && !isModeratorMode && (
           <Star
-            className={cn('w-3 h-3', typeTextColors[card.category])}
+            className={cn('w-4 h-4', categoryTextStyles[card.category])}
             fill="currentColor"
           />
         )}
         {isModeratorMode && (
           <Pencil
-            className={cn('w-3 h-3', typeTextColors[card.category])}
+            className={cn('w-3 h-3', categoryTextStyles[card.category])}
           />
         )}
         {onRemove && !isModeratorMode && (
@@ -113,27 +100,13 @@ export function MashupCard({
           </button>
         )}
       </div>
-
-      {/* Card content */}
-      <div className="flex flex-col h-full pt-4">
-        {showCategory && (
-          <div className="mb-2">
-            <span className={cn('type-badge', typeBadgeClasses[card.category])}>
-              {categoryTypes[card.category]}
-            </span>
-          </div>
-        )}
-        <p className={cn(
-          'font-medium leading-snug flex-1',
-          textSizes[size],
-          'text-foreground/90'
-        )}>
-          {card.text}
-        </p>
-      </div>
-
-      {/* Subtle scanlines overlay */}
-      <div className="absolute inset-0 scanlines pointer-events-none rounded-lg" />
+      
+      {showCategory && (
+        <span className={cn('text-lg mb-2 block', categoryTextStyles[card.category])}>
+          {categoryIcons[card.category]}
+        </span>
+      )}
+      <p className={cn('font-medium leading-snug', textSizes[size])}>{card.text}</p>
     </div>
   );
 
@@ -141,10 +114,10 @@ export function MashupCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, filter: 'brightness(1.5) blur(4px)' }}
-      animate={{ opacity: 1, scale: 1, filter: 'brightness(1) blur(0px)' }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ opacity: 0, y: 20, rotateY: -15 }}
+      animate={{ opacity: 1, y: 0, rotateY: 0 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.4, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       {CardContent}
     </motion.div>
