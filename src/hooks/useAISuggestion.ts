@@ -11,7 +11,10 @@ export function useAISuggestion() {
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const getSuggestion = async (selectedCards: Record<Category, Card | null>) => {
+  const getSuggestion = async (
+    selectedCards: Record<Category, Card | null>,
+    problemStatement?: string | null
+  ) => {
     const { insight, asset, tech, random } = selectedCards;
     
     if (!insight || !asset || !tech || !random) {
@@ -38,6 +41,7 @@ export function useAISuggestion() {
               tech: tech.text,
               random: random.text,
             },
+            problemStatement: problemStatement || undefined,
           }),
         }
       );

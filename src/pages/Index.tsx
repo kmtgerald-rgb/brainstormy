@@ -253,6 +253,7 @@ const Index = () => {
             onShuffle={handleShuffle}
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
+            problemStatement={session?.problem_statement || localProblemStatement}
           />
         </motion.section>
 
