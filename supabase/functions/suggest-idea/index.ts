@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cards } = await req.json();
+    const { cards, problemStatement } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -20,7 +20,11 @@ serve(async (req) => {
 
     const { insight, asset, tech, random } = cards;
 
-    const prompt = `You are a creative innovation consultant. Given these four elements, suggest ONE compelling product/service/campaign idea that combines all of them.
+    const focusContext = problemStatement 
+      ? `\n\nIMPORTANT SESSION FOCUS: "${problemStatement}"\nYour idea MUST directly address this focus/problem statement. Make sure the suggested concept is relevant and applicable to this specific challenge.\n`
+      : '';
+
+    const prompt = `You are a creative innovation consultant. Given these four elements, suggest ONE compelling product/service/campaign idea that combines all of them.${focusContext}
 
 Consumer Insight: "${insight}"
 Existing Asset: "${asset}"
@@ -29,7 +33,7 @@ Creative Twist: "${random}"
 
 Respond with a JSON object containing:
 - title: A catchy name for the idea (max 6 words)
-- description: A 2-3 sentence pitch explaining the concept
+- description: A 2-3 sentence pitch explaining the concept${problemStatement ? ' that addresses the session focus' : ''}
 
 Be creative, practical, and exciting. Focus on how these elements work together synergistically.`;
 

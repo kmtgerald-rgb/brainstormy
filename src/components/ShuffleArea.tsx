@@ -13,6 +13,7 @@ interface ShuffleAreaProps {
   onShuffle: () => void;
   onTwist: () => void;
   onClear: () => void;
+  problemStatement?: string | null;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -24,7 +25,7 @@ const categoryAccentStyles: Record<Category, string> = {
   random: 'border-l-[hsl(var(--category-random))]',
 };
 
-export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: ShuffleAreaProps) {
+export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear, problemStatement }: ShuffleAreaProps) {
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -57,7 +58,7 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
   };
 
   const handleGetSuggestion = () => {
-    getSuggestion(selectedCards);
+    getSuggestion(selectedCards, problemStatement);
   };
 
   const handleCardFlip = (card: Card) => {
