@@ -12,8 +12,8 @@ export function useCardExplanation() {
   const [explanations, setExplanations] = useState<Record<string, ExplanationState>>({});
 
   const getExplanation = useCallback(async (card: Card) => {
-    // Check if already cached
-    if (explanations[card.id]?.text) {
+    // Check if already cached or loading
+    if (explanations[card.id]?.text || explanations[card.id]?.loading) {
       return explanations[card.id].text;
     }
 
@@ -50,9 +50,18 @@ export function useCardExplanation() {
     }
   }, [explanations]);
 
+  // Pre-fetch explanations for multiple cards
+  const prefetchExplanations = useCallback((cards: Card[]) => {
+    cards.forEach(card => {
+      if (!explanations[card.id]?.text && !explanations[card.id]?.loading) {
+        getExplanation(card);
+      }
+    });
+  }, [explanations, getExplanation]);
+
   const getState = useCallback((cardId: string): ExplanationState => {
     return explanations[cardId] || { text: null, loading: false, error: null };
   }, [explanations]);
 
-  return { getExplanation, getState };
+  return { getExplanation, getState, prefetchExplanations };
 }
