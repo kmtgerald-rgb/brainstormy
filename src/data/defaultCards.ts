@@ -15,10 +15,25 @@ export const categoryLabels: Record<Category, string> = {
 };
 
 export const categoryIcons: Record<Category, string> = {
-  insight: '💡',
-  asset: '🏛️',
+  insight: '◈',
+  asset: '◆',
   tech: '⚡',
-  random: '🎲',
+  random: '◇',
+};
+
+// Strategic type mappings - Pokémon-inspired
+export const categoryTypes: Record<Category, string> = {
+  insight: 'PSYCHIC',
+  asset: 'STEEL',
+  tech: 'ELECTRIC',
+  random: 'GHOST',
+};
+
+// Get card index number (e.g., "PSY-001")
+export const getCardIndex = (card: Card): string => {
+  const prefix = { insight: 'PSY', asset: 'STL', tech: 'ELC', random: 'GHT' }[card.category];
+  const num = card.id.replace(/[^0-9]/g, '').padStart(3, '0');
+  return `${prefix}-${num}`;
 };
 
 export const defaultCards: Card[] = [
