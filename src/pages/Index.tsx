@@ -277,11 +277,9 @@ const Index = () => {
         >
           <ShuffleArea
             selectedCards={selectedCards}
-            allCards={allCardsForShuffle}
             onShuffle={handleShuffle}
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
-            onReplaceCard={handleReplaceCard}
             problemStatement={session?.problem_statement || localProblemStatement}
           />
         </motion.section>
@@ -328,6 +326,7 @@ const Index = () => {
                     key={category}
                     category={category}
                     cards={getLibraryCards(category, categoryFilters[category])}
+                    allCards={allCardsForShuffle}
                     filter={categoryFilters[category]}
                     onFilterChange={(filter) => handleFilterChange(category, filter)}
                     onAddWildcard={handleAddWildcard}
@@ -339,6 +338,7 @@ const Index = () => {
                     searchTerm={librarySearchTerm}
                     onInlineEdit={handleSaveCardEdit}
                     onResetCard={handleResetCard}
+                    problemStatement={session?.problem_statement || localProblemStatement}
                   />
                 ))}
               </div>
