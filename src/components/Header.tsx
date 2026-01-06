@@ -1,4 +1,4 @@
-import { Shield, ShieldOff } from 'lucide-react';
+import { Shield, ShieldOff, Target } from 'lucide-react';
 import { SessionPanel } from './SessionPanel';
 import { Session } from '@/hooks/useSession';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ interface HeaderProps {
   onLeaveSession?: () => void;
   isModeratorMode?: boolean;
   onToggleModeratorMode?: () => void;
+  onSetFocus?: () => void;
 }
 
 export function Header({
@@ -24,6 +25,7 @@ export function Header({
   onLeaveSession,
   isModeratorMode = false,
   onToggleModeratorMode,
+  onSetFocus,
 }: HeaderProps) {
   return (
     <header className="border-b border-border/50 bg-background sticky top-0 z-50">
@@ -34,6 +36,18 @@ export function Header({
           </div>
 
           <div className="flex items-center gap-3">
+            {isModeratorMode && session && onSetFocus && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSetFocus}
+                className="gap-2 font-mono text-xs uppercase tracking-wider"
+              >
+                <Target className="w-3.5 h-3.5" />
+                Set Focus
+              </Button>
+            )}
+
             {onToggleModeratorMode && (
               <Button
                 variant="ghost"

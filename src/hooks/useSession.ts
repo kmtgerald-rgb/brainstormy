@@ -8,6 +8,8 @@ export interface Session {
   code: string;
   created_at: string;
   updated_at: string;
+  problem_context: string | null;
+  problem_statement: string | null;
 }
 
 export interface SessionIdea {
@@ -48,7 +50,7 @@ export function useSession() {
   const [participantCount, setParticipantCount] = useState(1);
 
   // Create a new session
-  const createSession = useCallback(async (name: string) => {
+  const createSession = useCallback(async (name: string): Promise<Session | null> => {
     setIsLoading(true);
     try {
       const code = generateSessionCode();
@@ -59,9 +61,11 @@ export function useSession() {
         .single();
 
       if (error) throw error;
-      setSession(data);
+      // Cast to handle new columns not yet in generated types
+      const sessionData = data as unknown as Session;
+      setSession(sessionData);
       toast.success(`Session "${name}" created!`);
-      return data;
+      return sessionData;
     } catch (error) {
       console.error('Error creating session:', error);
       toast.error('Failed to create session');
@@ -72,7 +76,7 @@ export function useSession() {
   }, []);
 
   // Join an existing session
-  const joinSession = useCallback(async (code: string) => {
+  const joinSession = useCallback(async (code: string): Promise<Session | null> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -87,9 +91,11 @@ export function useSession() {
         return null;
       }
 
-      setSession(data);
+      // Cast to handle new columns not yet in generated types
+      const sessionData = data as unknown as Session;
+      setSession(sessionData);
       toast.success(`Joined "${data.name}"!`);
-      return data;
+      return sessionData;
     } catch (error) {
       console.error('Error joining session:', error);
       toast.error('Failed to join session');
@@ -231,6 +237,43 @@ export function useSession() {
     }
   }, []);
 
+  // Update problem statement
+  const updateProblemStatement = useCallback(
+    async (context: string, statement: string) => {
+      if (!session) return;
+
+      try {
+        // Use type assertion for new columns not yet in generated types
+        const updateData = {
+          problem_context: context || null,
+          problem_statement: statement || null,
+        } as Record<string, unknown>;
+        
+        const { error } = await supabase
+          .from('sessions')
+          .update(updateData as never)
+          .eq('id', session.id);
+
+        if (error) throw error;
+
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                problem_context: context || null,
+                problem_statement: statement || null,
+              }
+            : null
+        );
+      } catch (error) {
+        console.error('Error updating problem statement:', error);
+        toast.error('Failed to update focus');
+        throw error;
+      }
+    },
+    [session]
+  );
+
   // Subscribe to realtime updates
   useEffect(() => {
     if (!session) return;
@@ -285,6 +328,33 @@ export function useSession() {
       )
       .subscribe();
 
+    // Subscribe to session updates (for problem statement changes)
+    const sessionChannel = supabase
+      .channel(`session-updates-${session.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sessions',
+          filter: `id=eq.${session.id}`,
+        },
+        (payload) => {
+          console.log('Session update:', payload);
+          const updated = payload.new as Session;
+          setSession((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  problem_context: updated.problem_context,
+                  problem_statement: updated.problem_statement,
+                }
+              : null
+          );
+        }
+      )
+      .subscribe();
+
     // Presence for participant count
     const presenceChannel = supabase
       .channel(`session-presence-${session.id}`)
@@ -306,6 +376,7 @@ export function useSession() {
       supabase.removeChannel(ideasChannel);
       supabase.removeChannel(wildcardsChannel);
       supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(sessionChannel);
     };
   }, [session, fetchSessionData]);
 
@@ -322,5 +393,6 @@ export function useSession() {
     deleteIdea,
     addWildcard,
     deleteWildcard,
+    updateProblemStatement,
   };
 }
