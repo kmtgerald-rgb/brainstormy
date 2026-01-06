@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layers, Lightbulb } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -17,8 +17,20 @@ import { useModerator } from '@/hooks/useModerator';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
+
+const STORAGE_KEY = 'mashup-preferred-mode';
 
 const Index = () => {
   const {
@@ -63,6 +75,42 @@ const Index = () => {
     localProblemStatement,
     updateLocalProblemStatement,
   } = useModerator();
+
+  // Mode state with localStorage persistence
+  const [mode, setMode] = useState<'solo' | 'collaborative'>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'collaborative' ? 'collaborative' : 'solo';
+  });
+  const [pendingModeChange, setPendingModeChange] = useState<'solo' | 'collaborative' | null>(null);
+
+  // Persist mode preference
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, mode);
+  }, [mode]);
+
+  // Auto-switch to collaborative when joining/creating a session
+  useEffect(() => {
+    if (session && mode === 'solo') {
+      setMode('collaborative');
+    }
+  }, [session, mode]);
+
+  const handleModeChange = (newMode: 'solo' | 'collaborative') => {
+    if (newMode === 'solo' && session) {
+      // Show confirmation dialog
+      setPendingModeChange(newMode);
+    } else {
+      setMode(newMode);
+    }
+  };
+
+  const confirmModeChange = () => {
+    if (pendingModeChange === 'solo') {
+      leaveSession();
+      setMode('solo');
+    }
+    setPendingModeChange(null);
+  };
 
   const [categoryFilters, setCategoryFilters] = useState<Record<Category, FilterMode>>({
     insight: 'all',
@@ -246,6 +294,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
+        mode={mode}
+        onModeChange={handleModeChange}
         session={session}
         participantCount={participantCount}
         isLoading={isLoading}
@@ -417,6 +467,22 @@ const Index = () => {
         currentStatement={session?.problem_statement ?? localProblemStatement}
         onSave={session ? updateProblemStatement : async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
       />
+
+      {/* Mode change confirmation dialog */}
+      <AlertDialog open={!!pendingModeChange} onOpenChange={() => setPendingModeChange(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave current session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Switching to Solo mode will leave your current collaborative session. Your ideas will remain saved in the session.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmModeChange}>Leave & Switch</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
