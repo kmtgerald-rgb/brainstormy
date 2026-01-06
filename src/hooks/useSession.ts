@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useSessionHistory } from './useSessionHistory';
 
 export interface Session {
   id: string;
@@ -49,6 +50,14 @@ export function useSession() {
   const [isLoading, setIsLoading] = useState(false);
   const [participantCount, setParticipantCount] = useState(1);
 
+  const {
+    history: sessionHistory,
+    addToHistory,
+    updateLastAccessed,
+    updateIdeaCount,
+    removeFromHistory,
+  } = useSessionHistory();
+
   // Create a new session
   const createSession = useCallback(async (name: string): Promise<Session | null> => {
     setIsLoading(true);
@@ -64,6 +73,7 @@ export function useSession() {
       // Cast to handle new columns not yet in generated types
       const sessionData = data as unknown as Session;
       setSession(sessionData);
+      addToHistory(sessionData, 'creator');
       toast.success(`Session "${name}" created!`);
       return sessionData;
     } catch (error) {
@@ -94,6 +104,7 @@ export function useSession() {
       // Cast to handle new columns not yet in generated types
       const sessionData = data as unknown as Session;
       setSession(sessionData);
+      addToHistory(sessionData, 'participant');
       toast.success(`Joined "${data.name}"!`);
       return sessionData;
     } catch (error) {
@@ -107,11 +118,15 @@ export function useSession() {
 
   // Leave the current session
   const leaveSession = useCallback(() => {
+    if (session) {
+      updateLastAccessed(session.id);
+      updateIdeaCount(session.id, ideas.length);
+    }
     setSession(null);
     setIdeas([]);
     setWildcards([]);
     setParticipantCount(1);
-  }, []);
+  }, [session, ideas.length, updateLastAccessed, updateIdeaCount]);
 
   // Fetch session data
   const fetchSessionData = useCallback(async () => {
@@ -386,6 +401,8 @@ export function useSession() {
     wildcards,
     isLoading,
     participantCount,
+    sessionHistory,
+    removeFromHistory,
     createSession,
     joinSession,
     leaveSession,
