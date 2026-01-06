@@ -6,10 +6,10 @@ const corsHeaders = {
 };
 
 const categoryPrompts: Record<string, string> = {
-  insight: "This is a Consumer Insight card. Explain the psychological or behavioral principle behind this insight in 2-3 sentences. Give a brief real-world example of how brands have leveraged this.",
-  asset: "This is an Existing Asset card. Explain why this asset is strategically valuable and how it could be leveraged for innovation in 2-3 sentences.",
-  tech: "This is a New Technology card. Briefly explain this technology and its innovation potential in 2-3 sentences.",
-  random: "This is a Random/Misc twist card. Explain how this unexpected element could transform or disrupt conventional thinking in 2-3 sentences.",
+  insight: "Consumer Insight card. Give ONE punchy sentence on the psychology behind this (max 80 chars).",
+  asset: "Existing Asset card. ONE sentence on why this is strategically valuable (max 80 chars).",
+  tech: "New Technology card. ONE sentence on its innovation potential (max 80 chars).",
+  random: "Random twist card. ONE sentence on how this disrupts thinking (max 80 chars).",
 };
 
 serve(async (req) => {
@@ -45,14 +45,14 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a strategic innovation consultant helping workshop participants understand brainstorming prompts. Be concise, insightful, and practical. Write in a confident, editorial tone.`
+            content: `You are a strategic innovation consultant. Respond with ONE short, punchy sentence only. Max 80 characters. No fluff.`
           },
           {
             role: 'user',
-            content: `${categoryContext}\n\nCard text: "${cardText}"\n\nProvide a brief, insightful explanation.`
+            content: `${categoryContext}\n\nCard: "${cardText}"`
           }
         ],
-        max_tokens: 200,
+        max_tokens: 60,
         temperature: 0.7,
       }),
     });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, Pencil, X, RotateCw } from 'lucide-react';
+import { RotateCcw, Pencil, X, Info, ArrowLeftRight } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 
@@ -124,7 +124,7 @@ export function MashupCard({
           />
         )}
         {flippable && !isModeratorMode && (
-          <RotateCw className={cn('w-3 h-3', categoryTextStyles[card.category])} />
+          <Info className={cn('w-3 h-3', categoryTextStyles[card.category])} />
         )}
         {onRemove && !isModeratorMode && (
           <button
@@ -156,40 +156,34 @@ export function MashupCard({
       className={cn(
         baseCardClasses,
         categoryBackgroundStyles[card.category],
-        'absolute inset-0 rotate-y-180'
+        'absolute inset-0 overflow-hidden'
       )}
       style={{ transform: 'rotateY(180deg)' }}
     >
       <div className="absolute top-3 right-3">
-        <RotateCw className={cn('w-3 h-3', categoryTextStyles[card.category])} />
+        <ArrowLeftRight className={cn('w-3 h-3', categoryTextStyles[card.category])} />
       </div>
 
       <span className={cn(
-        'font-mono text-[10px] uppercase tracking-wider mb-3 block',
+        'font-mono text-[10px] uppercase tracking-wider mb-2 block',
         categoryTextStyles[card.category]
       )}>
-        About this card
+        Insight
       </span>
 
       {explanationLoading ? (
-        <div className="space-y-2">
-          <div className="h-3 bg-muted/50 rounded animate-pulse w-full" />
-          <div className="h-3 bg-muted/50 rounded animate-pulse w-4/5" />
-          <div className="h-3 bg-muted/50 rounded animate-pulse w-3/5" />
-        </div>
+        <p className="font-serif text-sm text-muted-foreground/60 italic animate-pulse">
+          Thinking...
+        </p>
       ) : explanation ? (
-        <p className={cn('font-serif text-sm leading-relaxed text-muted-foreground')}>
+        <p className="font-serif text-sm leading-relaxed text-muted-foreground line-clamp-4">
           {explanation}
         </p>
       ) : (
-        <p className="font-serif text-sm text-muted-foreground italic">
-          Tap to reveal insight...
+        <p className="font-serif text-sm text-muted-foreground/60 italic">
+          Tap to reveal...
         </p>
       )}
-
-      <span className="absolute bottom-3 right-3 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
-        Tap to flip
-      </span>
     </div>
   );
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle, RotateCcw, Wand2, Loader2, X, ArrowRight } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
@@ -31,7 +31,15 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear }: Shuf
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   
   const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
-  const { getExplanation, getState } = useCardExplanation();
+  const { getExplanation, getState, prefetchExplanations } = useCardExplanation();
+
+  // Pre-fetch explanations when cards are drawn
+  useEffect(() => {
+    const cards = Object.values(selectedCards).filter((card): card is Card => card !== null);
+    if (cards.length > 0) {
+      prefetchExplanations(cards);
+    }
+  }, [selectedCards, prefetchExplanations]);
 
   const handleShuffle = () => {
     setIsShuffling(true);
