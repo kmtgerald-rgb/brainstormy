@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, Pencil, X } from 'lucide-react';
+import { RotateCcw, Pencil, X, RotateCw } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +16,10 @@ interface MashupCardProps {
   delay?: number;
   isModeratorMode?: boolean;
   hasOverride?: boolean;
+  flippable?: boolean;
+  explanation?: string | null;
+  explanationLoading?: boolean;
+  onFlip?: () => void;
 }
 
 const categoryAccentStyles: Record<Category, string> = {
@@ -31,6 +36,13 @@ const categoryTextStyles: Record<Category, string> = {
   random: 'text-category-random',
 };
 
+const categoryBackgroundStyles: Record<Category, string> = {
+  insight: 'bg-[hsl(var(--category-insight)/0.08)]',
+  asset: 'bg-[hsl(var(--category-asset)/0.08)]',
+  tech: 'bg-[hsl(var(--category-tech)/0.08)]',
+  random: 'bg-[hsl(var(--category-random)/0.08)]',
+};
+
 export function MashupCard({
   card,
   isSelected = false,
@@ -43,7 +55,13 @@ export function MashupCard({
   delay = 0,
   isModeratorMode = false,
   hasOverride = false,
+  flippable = false,
+  explanation,
+  explanationLoading = false,
+  onFlip,
 }: MashupCardProps) {
+  const [isFlipped, setIsFlipped] = useState(false);
+
   const sizeClasses = {
     sm: 'p-4 min-h-[100px]',
     md: 'p-5 min-h-[140px]',
@@ -56,20 +74,38 @@ export function MashupCard({
     lg: 'text-lg leading-relaxed',
   };
 
-  const CardContent = (
-    <div
-      className={cn(
-        'relative bg-card border border-border border-l-[3px] transition-all duration-200 card-shadow',
-        categoryAccentStyles[card.category],
-        card.isWildcard && 'border-dashed border-l-solid',
-        isSelected && 'ring-1 ring-foreground',
-        hasOverride && 'ring-1 ring-amber-500/50',
-        onClick && 'cursor-pointer hover:card-shadow-hover hover:-translate-y-0.5',
-        isModeratorMode && 'cursor-pointer hover:card-shadow-hover hover:-translate-y-0.5',
-        sizeClasses[size]
-      )}
-      onClick={isModeratorMode ? onEdit : onClick}
-    >
+  const handleFlip = (e: React.MouseEvent) => {
+    if (!flippable) return;
+    e.stopPropagation();
+    
+    if (!isFlipped && onFlip) {
+      onFlip();
+    }
+    setIsFlipped(!isFlipped);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (flippable) {
+      handleFlip(e);
+    } else if (isModeratorMode && onEdit) {
+      onEdit();
+    } else if (onClick) {
+      onClick();
+    }
+  };
+
+  const baseCardClasses = cn(
+    'relative bg-card border border-border border-l-[3px] transition-all duration-200 card-shadow backface-hidden',
+    categoryAccentStyles[card.category],
+    card.isWildcard && 'border-dashed border-l-solid',
+    isSelected && 'ring-1 ring-foreground',
+    hasOverride && 'ring-1 ring-amber-500/50',
+    (onClick || flippable || isModeratorMode) && 'cursor-pointer hover:card-shadow-hover hover:-translate-y-0.5',
+    sizeClasses[size]
+  );
+
+  const FrontFace = (
+    <div className={cn(baseCardClasses, 'absolute inset-0')}>
       {/* Top-right actions */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5">
         {hasOverride && (
@@ -86,6 +122,9 @@ export function MashupCard({
           <Pencil
             className={cn('w-3 h-3', categoryTextStyles[card.category])}
           />
+        )}
+        {flippable && !isModeratorMode && (
+          <RotateCw className={cn('w-3 h-3', categoryTextStyles[card.category])} />
         )}
         {onRemove && !isModeratorMode && (
           <button
@@ -112,7 +151,71 @@ export function MashupCard({
     </div>
   );
 
-  if (!animate) return CardContent;
+  const BackFace = (
+    <div 
+      className={cn(
+        baseCardClasses,
+        categoryBackgroundStyles[card.category],
+        'absolute inset-0 rotate-y-180'
+      )}
+      style={{ transform: 'rotateY(180deg)' }}
+    >
+      <div className="absolute top-3 right-3">
+        <RotateCw className={cn('w-3 h-3', categoryTextStyles[card.category])} />
+      </div>
+
+      <span className={cn(
+        'font-mono text-[10px] uppercase tracking-wider mb-3 block',
+        categoryTextStyles[card.category]
+      )}>
+        About this card
+      </span>
+
+      {explanationLoading ? (
+        <div className="space-y-2">
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-full" />
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-4/5" />
+          <div className="h-3 bg-muted/50 rounded animate-pulse w-3/5" />
+        </div>
+      ) : explanation ? (
+        <p className={cn('font-serif text-sm leading-relaxed text-muted-foreground')}>
+          {explanation}
+        </p>
+      ) : (
+        <p className="font-serif text-sm text-muted-foreground italic">
+          Tap to reveal insight...
+        </p>
+      )}
+
+      <span className="absolute bottom-3 right-3 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
+        Tap to flip
+      </span>
+    </div>
+  );
+
+  const CardContainer = (
+    <div 
+      className="relative w-full h-full"
+      style={{ 
+        perspective: '1000px',
+        minHeight: size === 'sm' ? '100px' : size === 'md' ? '140px' : '180px'
+      }}
+    >
+      <div
+        onClick={handleCardClick}
+        className="relative w-full h-full transition-transform duration-500"
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}
+      >
+        {FrontFace}
+        {flippable && BackFace}
+      </div>
+    </div>
+  );
+
+  if (!animate) return CardContainer;
 
   return (
     <motion.div
@@ -121,7 +224,7 @@ export function MashupCard({
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      {CardContent}
+      {CardContainer}
     </motion.div>
   );
 }
