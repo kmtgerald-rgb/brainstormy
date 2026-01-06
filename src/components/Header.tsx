@@ -5,6 +5,7 @@ import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import brainstormyIcon from '@/assets/brainstormy-icon.png';
 
 interface HeaderProps {
   mode: 'solo' | 'collaborative';
@@ -42,7 +43,10 @@ export function Header({
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="font-serif text-2xl tracking-tight">Mash-Up</h1>
+            <div className="flex items-center gap-2">
+              <img src={brainstormyIcon} alt="Brainstormy" className="h-8 w-8" />
+              <h1 className="font-serif text-2xl tracking-tight">Brainstormy</h1>
+            </div>
             <ModeToggle
               mode={mode}
               onModeChange={onModeChange}
