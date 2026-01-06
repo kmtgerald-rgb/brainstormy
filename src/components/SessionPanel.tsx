@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Users, Plus, LogIn, LogOut, Copy, Check } from 'lucide-react';
 import { Session } from '@/hooks/useSession';
+import { SessionHistoryItem } from '@/hooks/useSessionHistory';
+import { SessionHistory } from './SessionHistory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,30 +13,35 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface SessionPanelProps {
   session: Session | null;
   participantCount: number;
   isLoading: boolean;
+  sessionHistory: SessionHistoryItem[];
   onCreateSession: (name: string) => Promise<Session | null>;
   onJoinSession: (code: string) => Promise<Session | null>;
   onLeaveSession: () => void;
+  onRemoveFromHistory: (sessionId: string) => void;
 }
 
 export function SessionPanel({
   session,
   participantCount,
   isLoading,
+  sessionHistory,
   onCreateSession,
   onJoinSession,
   onLeaveSession,
+  onRemoveFromHistory,
 }: SessionPanelProps) {
   const [sessionName, setSessionName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCreate = async () => {
@@ -114,8 +121,40 @@ export function SessionPanel({
     );
   }
 
+  const handleRejoin = async (code: string) => {
+    const result = await onJoinSession(code);
+    if (result) {
+      setIsHistoryOpen(false);
+    } else {
+      throw new Error('Session not found');
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
+      {/* Session History Popover */}
+      {sessionHistory.length > 0 && (
+        <Popover open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+              <Users className="w-4 h-4" />
+              Recent
+              <span className="ml-0.5 px-1.5 py-0.5 text-[10px] bg-muted rounded-full">
+                {sessionHistory.length}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-4">
+            <SessionHistory
+              history={sessionHistory}
+              onRejoin={handleRejoin}
+              onRemove={onRemoveFromHistory}
+              isLoading={isLoading}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">

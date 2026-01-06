@@ -40,6 +40,8 @@ const Index = () => {
     wildcards: sessionWildcards,
     isLoading,
     participantCount,
+    sessionHistory,
+    removeFromHistory,
     createSession,
     joinSession,
     leaveSession,
@@ -247,9 +249,11 @@ const Index = () => {
         session={session}
         participantCount={participantCount}
         isLoading={isLoading}
+        sessionHistory={sessionHistory}
         onCreateSession={createSession}
         onJoinSession={joinSession}
         onLeaveSession={leaveSession}
+        onRemoveFromHistory={removeFromHistory}
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
         onSetFocus={() => setIsFocusEditorOpen(true)}

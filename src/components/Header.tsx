@@ -1,6 +1,7 @@
 import { Shield, ShieldOff, Target } from 'lucide-react';
 import { SessionPanel } from './SessionPanel';
 import { Session } from '@/hooks/useSession';
+import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -8,9 +9,11 @@ interface HeaderProps {
   session?: Session | null;
   participantCount?: number;
   isLoading?: boolean;
+  sessionHistory?: SessionHistoryItem[];
   onCreateSession?: (name: string) => Promise<Session | null>;
   onJoinSession?: (code: string) => Promise<Session | null>;
   onLeaveSession?: () => void;
+  onRemoveFromHistory?: (sessionId: string) => void;
   isModeratorMode?: boolean;
   onToggleModeratorMode?: () => void;
   onSetFocus?: () => void;
@@ -20,9 +23,11 @@ export function Header({
   session,
   participantCount = 1,
   isLoading = false,
+  sessionHistory = [],
   onCreateSession,
   onJoinSession,
   onLeaveSession,
+  onRemoveFromHistory,
   isModeratorMode = false,
   onToggleModeratorMode,
   onSetFocus,
@@ -72,14 +77,16 @@ export function Header({
               </Button>
             )}
 
-            {onCreateSession && onJoinSession && onLeaveSession && (
+            {onCreateSession && onJoinSession && onLeaveSession && onRemoveFromHistory && (
               <SessionPanel
                 session={session ?? null}
                 participantCount={participantCount}
                 isLoading={isLoading}
+                sessionHistory={sessionHistory}
                 onCreateSession={onCreateSession}
                 onJoinSession={onJoinSession}
                 onLeaveSession={onLeaveSession}
+                onRemoveFromHistory={onRemoveFromHistory}
               />
             )}
           </div>
