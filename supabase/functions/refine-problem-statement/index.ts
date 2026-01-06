@@ -14,9 +14,27 @@ serve(async (req) => {
   try {
     const { context } = await req.json();
 
+    // Input validation
+    const minLength = 10;
+    const maxLength = 2000;
+
     if (!context || typeof context !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Context is required' }),
+        JSON.stringify({ error: 'Context is required and must be a string' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (context.length < minLength) {
+      return new Response(
+        JSON.stringify({ error: `Context must be at least ${minLength} characters` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (context.length > maxLength) {
+      return new Response(
+        JSON.stringify({ error: `Context must be less than ${maxLength} characters` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
