@@ -7,12 +7,15 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { useCardExplanation } from '@/hooks/useCardExplanation';
+import { useCardRegeneration } from '@/hooks/useCardRegeneration';
 
 interface ShuffleAreaProps {
   selectedCards: Record<Category, Card | null>;
+  allCards: Card[];
   onShuffle: () => void;
   onTwist: () => void;
   onClear: () => void;
+  onReplaceCard: (category: Category, card: Card) => void;
   problemStatement?: string | null;
 }
 
@@ -25,7 +28,15 @@ const categoryAccentStyles: Record<Category, string> = {
   random: 'border-l-[hsl(var(--category-random))]',
 };
 
-export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear, problemStatement }: ShuffleAreaProps) {
+export function ShuffleArea({ 
+  selectedCards, 
+  allCards,
+  onShuffle, 
+  onTwist, 
+  onClear, 
+  onReplaceCard,
+  problemStatement 
+}: ShuffleAreaProps) {
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -33,6 +44,7 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear, proble
   
   const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
   const { getExplanation, getState, prefetchExplanations } = useCardExplanation();
+  const { isRegenerating, regenerateCard } = useCardRegeneration();
 
   // Pre-fetch explanations when cards are drawn
   useEffect(() => {
@@ -65,6 +77,13 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear, proble
     getExplanation(card);
   };
 
+  const handleRegenerate = async (category: Category) => {
+    const newCard = await regenerateCard(category, allCards, problemStatement);
+    if (newCard) {
+      onReplaceCard(category, newCard);
+    }
+  };
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -95,6 +114,8 @@ export function ShuffleArea({ selectedCards, onShuffle, onTwist, onClear, proble
                   explanation={getState(selectedCards[category]!.id).text}
                   explanationLoading={getState(selectedCards[category]!.id).loading}
                   onFlip={() => handleCardFlip(selectedCards[category]!)}
+                  onRegenerate={() => handleRegenerate(category)}
+                  isRegenerating={isRegenerating[category]}
                 />
               ) : (
                 <div

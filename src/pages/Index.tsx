@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Layers, Lightbulb } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { CategorySection } from '@/components/CategorySection';
+import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
 import { ShuffleArea } from '@/components/ShuffleArea';
 import { TwistModal } from '@/components/TwistModal';
 import { IdeaBoard } from '@/components/IdeaBoard';
@@ -72,6 +73,11 @@ const Index = () => {
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
+  
+  // Card Library state
+  const [libraryViewMode, setLibraryViewMode] = useState<ViewMode>('grid');
+  const [librarySearchTerm, setLibrarySearchTerm] = useState('');
+  const [showModifiedOnly, setShowModifiedOnly] = useState(false);
 
   // Apply card overrides to cards
   const applyOverrides = useCallback(
@@ -108,6 +114,20 @@ const Index = () => {
       return applyOverrides(baseCards);
     },
     [getCardsByCategory, session, sessionWildcards, applyOverrides]
+  );
+
+  // Get cards for library with modified-only filter
+  const getLibraryCards = useCallback(
+    (category: Category, filter: FilterMode): Card[] => {
+      let cards = getCardsForCategory(category, filter);
+      
+      if (showModifiedOnly && isModeratorMode) {
+        cards = cards.filter((card) => hasOverride(card.id));
+      }
+      
+      return cards;
+    },
+    [getCardsForCategory, showModifiedOnly, isModeratorMode, hasOverride]
   );
 
   // All cards for shuffling (include session wildcards) with overrides applied
@@ -190,6 +210,13 @@ const Index = () => {
     setSelectedCards(newSelection);
   };
 
+  const handleReplaceCard = (category: Category, card: Card) => {
+    setSelectedCards((prev) => ({
+      ...prev,
+      [category]: card,
+    }));
+  };
+
   const handleSaveIdea = async (title: string, description: string, author?: string) => {
     if (session) {
       const cards = {
@@ -250,9 +277,11 @@ const Index = () => {
         >
           <ShuffleArea
             selectedCards={selectedCards}
+            allCards={allCardsForShuffle}
             onShuffle={handleShuffle}
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
+            onReplaceCard={handleReplaceCard}
             problemStatement={session?.problem_statement || localProblemStatement}
           />
         </motion.section>
@@ -266,8 +295,8 @@ const Index = () => {
                 Browse Library
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-              <SheetHeader className="mb-8">
+            <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
+              <SheetHeader className="mb-6">
                 <SheetTitle className="font-serif text-2xl">Card Library</SheetTitle>
                 <p className="text-sm text-muted-foreground">
                   Browse all cards or create your own wildcards
@@ -280,12 +309,25 @@ const Index = () => {
                 )}
               </SheetHeader>
               
+              {/* Library Header with Search and View Toggle */}
+              <div className="mb-8">
+                <CardLibraryHeader
+                  searchTerm={librarySearchTerm}
+                  onSearchChange={setLibrarySearchTerm}
+                  viewMode={libraryViewMode}
+                  onViewModeChange={setLibraryViewMode}
+                  showModifiedOnly={showModifiedOnly}
+                  onShowModifiedOnlyChange={setShowModifiedOnly}
+                  isModeratorMode={isModeratorMode}
+                />
+              </div>
+              
               <div className="space-y-10">
                 {categories.map((category) => (
                   <CategorySection
                     key={category}
                     category={category}
-                    cards={getCardsForCategory(category, categoryFilters[category])}
+                    cards={getLibraryCards(category, categoryFilters[category])}
                     filter={categoryFilters[category]}
                     onFilterChange={(filter) => handleFilterChange(category, filter)}
                     onAddWildcard={handleAddWildcard}
@@ -293,6 +335,10 @@ const Index = () => {
                     isModeratorMode={isModeratorMode}
                     onEditCard={handleEditCard}
                     hasOverride={hasOverride}
+                    viewMode={libraryViewMode}
+                    searchTerm={librarySearchTerm}
+                    onInlineEdit={handleSaveCardEdit}
+                    onResetCard={handleResetCard}
                   />
                 ))}
               </div>

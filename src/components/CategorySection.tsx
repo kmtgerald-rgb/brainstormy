@@ -3,7 +3,9 @@ import { Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
+import { CardListView } from './CardListView';
 import { FilterMode } from '@/hooks/useCards';
+import { ViewMode } from './CardLibraryHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,6 +27,10 @@ interface CategorySectionProps {
   isModeratorMode?: boolean;
   onEditCard?: (card: Card) => void;
   hasOverride?: (cardId: string) => boolean;
+  viewMode?: ViewMode;
+  searchTerm?: string;
+  onInlineEdit?: (cardId: string, newText: string) => void;
+  onResetCard?: (cardId: string) => void;
 }
 
 const categoryAccentColors: Record<Category, string> = {
@@ -44,6 +50,10 @@ export function CategorySection({
   isModeratorMode = false,
   onEditCard,
   hasOverride,
+  viewMode = 'grid',
+  searchTerm = '',
+  onInlineEdit,
+  onResetCard,
 }: CategorySectionProps) {
   const [newCardText, setNewCardText] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -62,6 +72,24 @@ export function CategorySection({
     { value: 'wildcards', label: 'Wildcards' },
   ];
 
+  // Filter cards by search term
+  const filteredCards = searchTerm
+    ? cards.filter((card) =>
+        card.text.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : cards;
+
+  // Empty state messages
+  const getEmptyMessage = () => {
+    if (searchTerm) {
+      return `No cards match "${searchTerm}".`;
+    }
+    if (filter === 'wildcards') {
+      return "No wildcards yet. Click 'Add' to create your first custom card.";
+    }
+    return 'No cards in this filter. Try switching to "All" or add some wildcards.';
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -75,7 +103,7 @@ export function CategorySection({
           <div>
             <h3 className="font-serif text-xl">{categoryLabels[category]}</h3>
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              {cards.length} cards
+              {filteredCards.length} card{filteredCards.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -133,26 +161,39 @@ export function CategorySection({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <AnimatePresence mode="popLayout">
-          {cards.map((card, index) => (
-            <MashupCard
-              key={card.id}
-              card={card}
-              size="sm"
-              delay={index * 0.02}
-              onRemove={card.isWildcard && !isModeratorMode ? () => onRemoveWildcard(card.id) : undefined}
-              onEdit={onEditCard ? () => onEditCard(card) : undefined}
-              isModeratorMode={isModeratorMode}
-              hasOverride={hasOverride?.(card.id)}
-            />
-          ))}
-        </AnimatePresence>
-      </div>
+      {viewMode === 'list' ? (
+        <CardListView
+          cards={filteredCards}
+          category={category}
+          isModeratorMode={isModeratorMode}
+          onRemoveWildcard={onRemoveWildcard}
+          hasOverride={hasOverride}
+          onInlineEdit={onInlineEdit}
+          onResetCard={onResetCard}
+          searchTerm={searchTerm}
+        />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <AnimatePresence mode="popLayout">
+            {filteredCards.map((card, index) => (
+              <MashupCard
+                key={card.id}
+                card={card}
+                size="sm"
+                delay={index * 0.02}
+                onRemove={card.isWildcard && !isModeratorMode ? () => onRemoveWildcard(card.id) : undefined}
+                onEdit={onEditCard ? () => onEditCard(card) : undefined}
+                isModeratorMode={isModeratorMode}
+                hasOverride={hasOverride?.(card.id)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
-      {cards.length === 0 && (
-        <p className="text-center text-muted-foreground py-12">
-          No cards in this filter. Try switching to "All" or add some wildcards.
+      {filteredCards.length === 0 && (
+        <p className="text-center text-muted-foreground py-12 text-sm">
+          {getEmptyMessage()}
         </p>
       )}
     </div>
