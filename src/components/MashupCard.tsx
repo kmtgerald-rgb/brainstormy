@@ -18,10 +18,10 @@ interface MashupCardProps {
 }
 
 const categoryAccentStyles: Record<Category, string> = {
-  insight: 'border-l-category-insight',
-  asset: 'border-l-category-asset',
-  tech: 'border-l-category-tech',
-  random: 'border-l-category-random',
+  insight: 'border-l-[hsl(var(--category-insight))]',
+  asset: 'border-l-[hsl(var(--category-asset))]',
+  tech: 'border-l-[hsl(var(--category-tech))]',
+  random: 'border-l-[hsl(var(--category-random))]',
 };
 
 const categoryTextStyles: Record<Category, string> = {
