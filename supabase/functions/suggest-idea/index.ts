@@ -11,7 +11,42 @@ serve(async (req) => {
   }
 
   try {
-    const { cards, problemStatement } = await req.json();
+    const body = await req.json();
+    const { cards, problemStatement } = body;
+    
+    // Input validation
+    if (!cards || typeof cards !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const requiredFields = ['insight', 'asset', 'tech', 'random'] as const;
+    const maxCardLength = 500;
+
+    for (const field of requiredFields) {
+      if (!cards[field] || typeof cards[field] !== 'string') {
+        return new Response(
+          JSON.stringify({ error: `Missing or invalid field: ${field}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (cards[field].length > maxCardLength) {
+        return new Response(
+          JSON.stringify({ error: `Field ${field} exceeds maximum length of ${maxCardLength}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (problemStatement && (typeof problemStatement !== 'string' || problemStatement.length > 1000)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid problem statement (max 1000 characters)' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {

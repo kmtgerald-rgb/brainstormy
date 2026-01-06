@@ -20,9 +20,27 @@ serve(async (req) => {
   try {
     const { cardText, category } = await req.json();
 
-    if (!cardText || !category) {
+    // Input validation
+    const validCategories = ['insight', 'asset', 'tech', 'random'];
+    const maxCardLength = 500;
+
+    if (!cardText || typeof cardText !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Missing cardText or category' }),
+        JSON.stringify({ error: 'Missing or invalid cardText' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (cardText.length > maxCardLength) {
+      return new Response(
+        JSON.stringify({ error: `Card text exceeds maximum length of ${maxCardLength}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!category || typeof category !== 'string' || !validCategories.includes(category)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid category. Must be: insight, asset, tech, or random' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
