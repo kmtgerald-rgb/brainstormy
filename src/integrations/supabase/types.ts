@@ -61,6 +61,41 @@ export type Database = {
           },
         ]
       }
+      session_scores: {
+        Row: {
+          created_at: string | null
+          id: string
+          participant_name: string
+          score: number | null
+          session_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          participant_name: string
+          score?: number | null
+          session_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          participant_name?: string
+          score?: number | null
+          session_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_wildcards: {
         Row: {
           category: string
@@ -97,6 +132,10 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          game_ends_at: string | null
+          game_mode: string | null
+          game_settings: Json | null
+          game_started_at: string | null
           id: string
           name: string
           updated_at: string
@@ -104,6 +143,10 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string
+          game_ends_at?: string | null
+          game_mode?: string | null
+          game_settings?: Json | null
+          game_started_at?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -111,6 +154,10 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          game_ends_at?: string | null
+          game_mode?: string | null
+          game_settings?: Json | null
+          game_started_at?: string | null
           id?: string
           name?: string
           updated_at?: string
