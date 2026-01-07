@@ -11,9 +11,12 @@ import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
 import { EditCardDialog } from '@/components/EditCardDialog';
 import { ProblemStatementEditor } from '@/components/ProblemStatementEditor';
 import { ProblemStatementBanner } from '@/components/ProblemStatementBanner';
+import { GameHUD } from '@/components/GameHUD';
+import { GameEndModal } from '@/components/GameEndModal';
 import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
+import { useGameMode } from '@/hooks/useGameMode';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -82,6 +85,9 @@ const Index = () => {
     return stored === 'collaborative' ? 'collaborative' : 'solo';
   });
   const [pendingModeChange, setPendingModeChange] = useState<'solo' | 'collaborative' | null>(null);
+
+  // Game mode hook (needs mode variable to be defined first)
+  const gameMode = useGameMode(mode === 'collaborative');
 
   // Persist mode preference
   useEffect(() => {
@@ -279,6 +285,8 @@ const Index = () => {
     } else {
       saveLocalIdea(title, description, author);
     }
+    // Increment ideas count for game mode
+    gameMode.incrementIdeas();
   };
 
   const handleDeleteIdea = async (id: string) => {
@@ -290,6 +298,17 @@ const Index = () => {
   };
 
   const displayedIdeas = session ? sessionIdeas : localSavedIdeas;
+
+  const handlePlayAgain = () => {
+    gameMode.resetGame();
+    gameMode.startGame();
+  };
+
+  const handleViewIdeas = () => {
+    gameMode.closeEndModal();
+    const ideasSection = document.getElementById('ideas-section');
+    ideasSection?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -307,6 +326,13 @@ const Index = () => {
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
         onSetFocus={() => setIsFocusEditorOpen(true)}
+        // Game mode props
+        gameMode={gameMode.mode}
+        gameSettings={gameMode.settings}
+        availableGameModes={gameMode.availableModes}
+        isGameRunning={gameMode.isRunning}
+        onGameModeChange={gameMode.changeMode}
+        onGameSettingsChange={gameMode.updateSettings}
       />
 
       <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
@@ -323,6 +349,30 @@ const Index = () => {
             />
           </motion.div>
         )}
+
+        {/* Game HUD */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <GameHUD
+            mode={gameMode.mode}
+            settings={gameMode.settings}
+            isRunning={gameMode.isRunning}
+            isPaused={gameMode.isPaused}
+            timeRemaining={gameMode.timeRemaining}
+            ideasCount={gameMode.ideasCount}
+            requiresStart={gameMode.requiresStart}
+            formatTime={gameMode.formatTime}
+            onStart={gameMode.startGame}
+            onPause={gameMode.pauseGame}
+            onResume={gameMode.resumeGame}
+            onEnd={gameMode.endGame}
+            onReset={gameMode.resetGame}
+          />
+        </motion.div>
+
         {/* Shuffle Canvas - Hero */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -335,6 +385,7 @@ const Index = () => {
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
             problemStatement={session?.problem_statement || localProblemStatement}
+            canPlay={gameMode.canPlay}
           />
         </motion.section>
 
@@ -466,6 +517,18 @@ const Index = () => {
         currentContext={session?.problem_context ?? localProblemContext}
         currentStatement={session?.problem_statement ?? localProblemStatement}
         onSave={session ? updateProblemStatement : async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
+      />
+
+      <GameEndModal
+        isOpen={gameMode.showEndModal}
+        mode={gameMode.mode}
+        settings={gameMode.settings}
+        ideasCount={gameMode.ideasCount}
+        elapsedTime={gameMode.getElapsedTime()}
+        formatTime={gameMode.formatTime}
+        onClose={gameMode.closeEndModal}
+        onPlayAgain={handlePlayAgain}
+        onViewIdeas={handleViewIdeas}
       />
 
       {/* Mode change confirmation dialog */}

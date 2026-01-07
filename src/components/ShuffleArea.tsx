@@ -14,6 +14,7 @@ interface ShuffleAreaProps {
   onTwist: () => void;
   onClear: () => void;
   problemStatement?: string | null;
+  canPlay?: boolean;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -30,7 +31,8 @@ export function ShuffleArea({
   onShuffle, 
   onTwist, 
   onClear, 
-  problemStatement 
+  problemStatement,
+  canPlay = true
 }: ShuffleAreaProps) {
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
@@ -154,7 +156,7 @@ export function ShuffleArea({
         <Button
           size="lg"
           onClick={handleShuffle}
-          disabled={isShuffling}
+          disabled={isShuffling || !canPlay}
           className="gap-3 px-8 h-14 text-base font-sans font-medium tracking-wide uppercase"
         >
           <Shuffle className={cn('w-5 h-5', isShuffling && 'animate-spin')} />

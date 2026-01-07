@@ -1,8 +1,10 @@
 import { Shield, ShieldOff, Target } from 'lucide-react';
 import { SessionPanel } from './SessionPanel';
 import { ModeToggle } from './ModeToggle';
+import { GameModeSelector } from './GameModeSelector';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
+import { GameMode, GameSettings } from '@/hooks/useGameMode';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import brainstormyIcon from '@/assets/brainstormy-icon.png';
@@ -21,6 +23,13 @@ interface HeaderProps {
   isModeratorMode?: boolean;
   onToggleModeratorMode?: () => void;
   onSetFocus?: () => void;
+  // Game mode props
+  gameMode?: GameMode;
+  gameSettings?: GameSettings;
+  availableGameModes?: GameMode[];
+  isGameRunning?: boolean;
+  onGameModeChange?: (mode: GameMode) => void;
+  onGameSettingsChange?: (settings: Partial<GameSettings>) => void;
 }
 
 export function Header({
@@ -37,6 +46,12 @@ export function Header({
   isModeratorMode = false,
   onToggleModeratorMode,
   onSetFocus,
+  gameMode = 'freejam',
+  gameSettings = { duration: 300, targetCount: 10 },
+  availableGameModes = ['freejam', 'time-attack', 'target'],
+  isGameRunning = false,
+  onGameModeChange,
+  onGameSettingsChange,
 }: HeaderProps) {
   return (
     <header className="border-b border-border/50 bg-background sticky top-0 z-50">
@@ -50,8 +65,19 @@ export function Header({
             <ModeToggle
               mode={mode}
               onModeChange={onModeChange}
-              disabled={isLoading}
+              disabled={isLoading || isGameRunning}
             />
+            
+            {onGameModeChange && onGameSettingsChange && (
+              <GameModeSelector
+                mode={gameMode}
+                settings={gameSettings}
+                availableModes={availableGameModes}
+                isRunning={isGameRunning}
+                onModeChange={onGameModeChange}
+                onSettingsChange={onGameSettingsChange}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-3">
