@@ -3,6 +3,8 @@ import { Clock, Target, Zap, Trophy, Play, Pause, RotateCcw, Square } from 'luci
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
+import { SessionScore } from '@/hooks/useCollaborativeGameMode';
+import { CompetitionLeaderboard } from './CompetitionLeaderboard';
 import { cn } from '@/lib/utils';
 
 interface GameHUDProps {
@@ -19,6 +21,10 @@ interface GameHUDProps {
   onResume: () => void;
   onEnd: () => void;
   onReset: () => void;
+  // Competition mode props
+  scores?: SessionScore[];
+  currentParticipant?: string;
+  isCollaborative?: boolean;
 }
 
 const modeLabels: Record<GameMode, string> = {
@@ -49,6 +55,9 @@ export function GameHUD({
   onResume,
   onEnd,
   onReset,
+  scores = [],
+  currentParticipant = '',
+  isCollaborative = false,
 }: GameHUDProps) {
   const Icon = modeIcons[mode];
 
@@ -128,6 +137,10 @@ export function GameHUD({
                   <span className="text-lg font-semibold">{ideasCount}</span>
                   <span className="text-muted-foreground"> / {settings.targetCount}</span>
                 </span>
+              ) : mode === 'competition' ? (
+                <span>
+                  Your score: <span className="font-semibold">{scores.find(s => s.participant_name === currentParticipant)?.score || 0}</span>
+                </span>
               ) : (
                 <span>
                   Ideas: <span className="font-semibold">{ideasCount}</span>
@@ -137,8 +150,19 @@ export function GameHUD({
           </div>
         </div>
 
+        {/* Competition Leaderboard */}
+        {mode === 'competition' && isCollaborative && scores.length > 0 && (
+          <div className="px-4 pb-3 border-t border-border pt-3">
+            <CompetitionLeaderboard
+              scores={scores}
+              currentParticipant={currentParticipant}
+              compact
+            />
+          </div>
+        )}
+
         {/* Progress bar */}
-        {isRunning && (
+        {isRunning && mode !== 'competition' && (
           <div className="px-4 pb-3">
             <Progress value={getProgress()} className="h-1.5" />
           </div>
@@ -161,11 +185,11 @@ export function GameHUD({
                     className="gap-2 font-mono text-xs uppercase tracking-wider"
                   >
                     <Play className="w-3.5 h-3.5" />
-                    Start
+                    {mode === 'competition' ? 'Start Competition' : 'Start'}
                   </Button>
                 ) : (
                   <>
-                    {isPaused ? (
+                    {!isCollaborative && isPaused ? (
                       <Button
                         onClick={onResume}
                         size="sm"
@@ -175,7 +199,7 @@ export function GameHUD({
                         <Play className="w-3.5 h-3.5" />
                         Resume
                       </Button>
-                    ) : (
+                    ) : !isCollaborative ? (
                       <Button
                         onClick={onPause}
                         size="sm"
@@ -185,7 +209,7 @@ export function GameHUD({
                         <Pause className="w-3.5 h-3.5" />
                         Pause
                       </Button>
-                    )}
+                    ) : null}
                     <Button
                       onClick={onEnd}
                       size="sm"
@@ -195,15 +219,17 @@ export function GameHUD({
                       <Square className="w-3.5 h-3.5" />
                       End
                     </Button>
-                    <Button
-                      onClick={onReset}
-                      size="sm"
-                      variant="ghost"
-                      className="gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Reset
-                    </Button>
+                    {!isCollaborative && (
+                      <Button
+                        onClick={onReset}
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

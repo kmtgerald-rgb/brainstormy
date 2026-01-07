@@ -13,10 +13,12 @@ import { ProblemStatementEditor } from '@/components/ProblemStatementEditor';
 import { ProblemStatementBanner } from '@/components/ProblemStatementBanner';
 import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
+import { CompetitionEndModal } from '@/components/CompetitionEndModal';
 import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
+import { useCollaborativeGameMode } from '@/hooks/useCollaborativeGameMode';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -129,11 +131,17 @@ const Index = () => {
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
+  const [participantName, setParticipantName] = useState(() => {
+    return localStorage.getItem('brainstormy-participant-name') || '';
+  });
   
   // Card Library state
   const [libraryViewMode, setLibraryViewMode] = useState<ViewMode>('grid');
   const [librarySearchTerm, setLibrarySearchTerm] = useState('');
   const [showModifiedOnly, setShowModifiedOnly] = useState(false);
+
+  // Collaborative game mode hook
+  const collabGame = useCollaborativeGameMode(session?.id || null, participantName);
 
   // Apply card overrides to cards
   const applyOverrides = useCallback(
@@ -274,6 +282,12 @@ const Index = () => {
   };
 
   const handleSaveIdea = async (title: string, description: string, author?: string) => {
+    // Store participant name for competition mode
+    if (author && author !== participantName) {
+      setParticipantName(author);
+      localStorage.setItem('brainstormy-participant-name', author);
+    }
+
     if (session) {
       const cards = {
         insight: selectedCards.insight?.text || '',
@@ -282,10 +296,14 @@ const Index = () => {
         random: selectedCards.random?.text || '',
       };
       await addSessionIdea(title, description, author, cards);
+      // Increment score for collaborative competition mode
+      if (collabGame.mode === 'competition' && collabGame.isRunning) {
+        await collabGame.incrementScore();
+      }
     } else {
       saveLocalIdea(title, description, author);
     }
-    // Increment ideas count for game mode
+    // Increment ideas count for solo game mode
     gameMode.incrementIdeas();
   };
 
@@ -326,13 +344,13 @@ const Index = () => {
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
         onSetFocus={() => setIsFocusEditorOpen(true)}
-        // Game mode props
-        gameMode={gameMode.mode}
-        gameSettings={gameMode.settings}
-        availableGameModes={gameMode.availableModes}
-        isGameRunning={gameMode.isRunning}
-        onGameModeChange={gameMode.changeMode}
-        onGameSettingsChange={gameMode.updateSettings}
+        // Game mode props - use collaborative game mode when in session
+        gameMode={session ? collabGame.mode : gameMode.mode}
+        gameSettings={session ? collabGame.settings : gameMode.settings}
+        availableGameModes={session ? ['freejam', 'time-attack', 'target', 'competition'] : gameMode.availableModes}
+        isGameRunning={session ? collabGame.isRunning : gameMode.isRunning}
+        onGameModeChange={session ? collabGame.updateGameMode : gameMode.changeMode}
+        onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
       />
 
       <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
@@ -350,27 +368,48 @@ const Index = () => {
           </motion.div>
         )}
 
-        {/* Game HUD */}
+        {/* Game HUD - Use collaborative game mode when in session */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <GameHUD
-            mode={gameMode.mode}
-            settings={gameMode.settings}
-            isRunning={gameMode.isRunning}
-            isPaused={gameMode.isPaused}
-            timeRemaining={gameMode.timeRemaining}
-            ideasCount={gameMode.ideasCount}
-            requiresStart={gameMode.requiresStart}
-            formatTime={gameMode.formatTime}
-            onStart={gameMode.startGame}
-            onPause={gameMode.pauseGame}
-            onResume={gameMode.resumeGame}
-            onEnd={gameMode.endGame}
-            onReset={gameMode.resetGame}
-          />
+          {session ? (
+            <GameHUD
+              mode={collabGame.mode}
+              settings={collabGame.settings}
+              isRunning={collabGame.isRunning}
+              isPaused={false}
+              timeRemaining={collabGame.timeRemaining}
+              ideasCount={sessionIdeas.length}
+              requiresStart={collabGame.mode !== 'freejam'}
+              formatTime={collabGame.formatTime}
+              onStart={collabGame.startGame}
+              onPause={() => {}}
+              onResume={() => {}}
+              onEnd={collabGame.endGame}
+              onReset={() => {}}
+              scores={collabGame.scores}
+              currentParticipant={participantName}
+              isCollaborative
+            />
+          ) : (
+            <GameHUD
+              mode={gameMode.mode}
+              settings={gameMode.settings}
+              isRunning={gameMode.isRunning}
+              isPaused={gameMode.isPaused}
+              timeRemaining={gameMode.timeRemaining}
+              ideasCount={gameMode.ideasCount}
+              requiresStart={gameMode.requiresStart}
+              formatTime={gameMode.formatTime}
+              onStart={gameMode.startGame}
+              onPause={gameMode.pauseGame}
+              onResume={gameMode.resumeGame}
+              onEnd={gameMode.endGame}
+              onReset={gameMode.resetGame}
+            />
+          )}
         </motion.div>
 
         {/* Shuffle Canvas - Hero */}
@@ -385,7 +424,7 @@ const Index = () => {
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
             problemStatement={session?.problem_statement || localProblemStatement}
-            canPlay={gameMode.canPlay}
+            canPlay={session ? (collabGame.mode === 'freejam' || collabGame.isRunning) : gameMode.canPlay}
           />
         </motion.section>
 
@@ -520,7 +559,7 @@ const Index = () => {
       />
 
       <GameEndModal
-        isOpen={gameMode.showEndModal}
+        isOpen={gameMode.showEndModal && !session}
         mode={gameMode.mode}
         settings={gameMode.settings}
         ideasCount={gameMode.ideasCount}
@@ -529,6 +568,18 @@ const Index = () => {
         onClose={gameMode.closeEndModal}
         onPlayAgain={handlePlayAgain}
         onViewIdeas={handleViewIdeas}
+      />
+
+      <CompetitionEndModal
+        isOpen={collabGame.showEndModal && !!session}
+        scores={collabGame.scores}
+        currentParticipant={participantName}
+        onClose={collabGame.closeEndModal}
+        onViewIdeas={() => {
+          collabGame.closeEndModal();
+          const ideasSection = document.getElementById('ideas-section');
+          ideasSection?.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
 
       {/* Mode change confirmation dialog */}
