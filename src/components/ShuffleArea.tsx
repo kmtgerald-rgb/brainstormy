@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, RotateCcw, Wand2, Loader2, X, ArrowRight } from 'lucide-react';
+import { Shuffle, RotateCcw, Wand2, Loader2, X, ArrowRight, Lightbulb } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
@@ -74,17 +74,26 @@ export function ShuffleArea({
   };
 
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <div className="text-center space-y-4 max-w-xl mx-auto">
-        <h2 className="font-serif text-4xl md:text-5xl">Draw the unexpected.</h2>
-        <p className="text-muted-foreground">
-          Four forces. One idea.
-        </p>
-      </div>
+    <div className="text-center space-y-12">
+      {/* Hero text - only show when no cards */}
+      <AnimatePresence>
+        {!hasAnyCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
+          >
+            <h2 className="font-serif text-4xl md:text-5xl">Draw the unexpected.</h2>
+            <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
+              Four forces. One idea.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
         <AnimatePresence mode="wait">
           {categories.map((category, index) => (
             <motion.div
@@ -107,7 +116,7 @@ export function ShuffleArea({
               ) : (
                 <div
                   className={cn(
-                    'border border-dashed border-border/60 border-l-[3px] border-l-solid p-6 min-h-[180px] flex flex-col justify-end bg-muted/30',
+                    'aspect-[3/4] border border-dashed border-border/60 border-l-[3px] border-l-solid p-6 flex flex-col justify-end bg-muted/30',
                     categoryAccentStyles[category]
                   )}
                 >
@@ -136,7 +145,7 @@ export function ShuffleArea({
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
-            <div className="space-y-3">
+            <div className="space-y-3 text-left">
               <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 AI Suggestion
               </span>
@@ -151,68 +160,70 @@ export function ShuffleArea({
         )}
       </AnimatePresence>
 
-      {/* Actions */}
-      <div className="flex justify-center gap-4 flex-wrap">
-        <Button
-          size="lg"
-          onClick={handleShuffle}
-          disabled={isShuffling || !canPlay}
-          className="gap-3 px-8 h-14 text-base font-sans font-medium tracking-wide uppercase"
-        >
-          <Shuffle className={cn('w-5 h-5', isShuffling && 'animate-spin')} />
-          Shuffle
-        </Button>
-
-        {hasAllCards && (
-          <>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
+      {/* Primary Action */}
+      <div className="flex flex-col items-center gap-4">
+        {!hasAnyCard ? (
+          <Button
+            size="lg"
+            onClick={handleShuffle}
+            disabled={isShuffling || !canPlay}
+            className="gap-3 px-12 py-6 text-lg font-mono uppercase tracking-wider"
+          >
+            <Shuffle className={cn('w-5 h-5', isShuffling && 'animate-spin')} />
+            Shuffle
+          </Button>
+        ) : (
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            {hasAllCards && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <Button
+                  size="lg"
+                  onClick={onTwist}
+                  className="gap-3 px-10 py-6 text-lg font-mono uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <Lightbulb className="w-5 h-5" />
+                  TWIST
+                </Button>
+              </motion.div>
+            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleShuffle}
+              disabled={isShuffling || !canPlay}
+              className="gap-2 font-mono text-xs uppercase tracking-wider"
             >
+              <Shuffle className={cn('w-4 h-4', isShuffling && 'animate-spin')} />
+              Reshuffle
+            </Button>
+            {hasAllCards && (
               <Button
+                variant="ghost"
                 size="lg"
-                variant="outline"
                 onClick={handleGetSuggestion}
                 disabled={isAILoading}
-                className="gap-3 px-6 h-14 text-base font-sans font-medium"
+                className="gap-2 font-mono text-xs uppercase tracking-wider"
               >
                 {isAILoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Wand2 className="w-5 h-5" />
+                  <Wand2 className="w-4 h-4" />
                 )}
-                {isAILoading ? 'Thinking...' : 'AI Suggest'}
+                AI Suggest
               </Button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, delay: 0.05 }}
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              className="text-muted-foreground"
             >
-              <Button
-                size="lg"
-                onClick={onTwist}
-                className="gap-3 px-8 h-14 text-base font-sans font-medium tracking-wide uppercase bg-foreground text-background hover:bg-foreground/90 animate-twist-pulse"
-              >
-                TWIST
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </motion.div>
-          </>
-        )}
-
-        {hasAnyCard && (
-          <Button 
-            size="lg" 
-            variant="ghost" 
-            onClick={handleClear} 
-            className="gap-2 h-14 text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Clear
-          </Button>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         )}
       </div>
     </div>

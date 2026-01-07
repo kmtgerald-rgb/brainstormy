@@ -1,12 +1,7 @@
-import { Shield, ShieldOff, Target } from 'lucide-react';
-import { SessionPanel } from './SessionPanel';
-import { ModeToggle } from './ModeToggle';
-import { GameModeSelector } from './GameModeSelector';
+import { ControlPanel } from './ControlPanel';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import brainstormyIcon from '@/assets/brainstormy-icon.png';
 
 interface HeaderProps {
@@ -23,7 +18,6 @@ interface HeaderProps {
   isModeratorMode?: boolean;
   onToggleModeratorMode?: () => void;
   onSetFocus?: () => void;
-  // Game mode props
   gameMode?: GameMode;
   gameSettings?: GameSettings;
   availableGameModes?: GameMode[];
@@ -56,80 +50,33 @@ export function Header({
   return (
     <header className="border-b border-border/50 bg-background sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <img src={brainstormyIcon} alt="Brainstormy" className="h-8 w-8" />
-              <h1 className="font-serif text-2xl tracking-tight">Brainstormy</h1>
-            </div>
-            <ModeToggle
-              mode={mode}
-              onModeChange={onModeChange}
-              disabled={isLoading || isGameRunning}
-            />
-            
-            {onGameModeChange && onGameSettingsChange && (
-              <GameModeSelector
-                mode={gameMode}
-                settings={gameSettings}
-                availableModes={availableGameModes}
-                isRunning={isGameRunning}
-                onModeChange={onGameModeChange}
-                onSettingsChange={onGameSettingsChange}
-              />
-            )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={brainstormyIcon} alt="Brainstormy" className="h-8 w-8" />
+            <h1 className="font-serif text-2xl tracking-tight">Brainstormy</h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            {isModeratorMode && onSetFocus && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSetFocus}
-                className="gap-2 font-mono text-xs uppercase tracking-wider"
-              >
-                <Target className="w-3.5 h-3.5" />
-                Set Focus
-              </Button>
-            )}
-
-            {onToggleModeratorMode && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleModeratorMode}
-                className={cn(
-                  'gap-2 font-mono text-xs uppercase tracking-wider',
-                  isModeratorMode && 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
-                )}
-              >
-                {isModeratorMode ? (
-                  <>
-                    <Shield className="w-3.5 h-3.5" />
-                    Moderator
-                  </>
-                ) : (
-                  <>
-                    <ShieldOff className="w-3.5 h-3.5" />
-                    Moderate
-                  </>
-                )}
-              </Button>
-            )}
-
-            {mode === 'collaborative' && onCreateSession && onJoinSession && onLeaveSession && onRemoveFromHistory && (
-              <SessionPanel
-                session={session ?? null}
-                participantCount={participantCount}
-                isLoading={isLoading}
-                sessionHistory={sessionHistory}
-                onCreateSession={onCreateSession}
-                onJoinSession={onJoinSession}
-                onLeaveSession={onLeaveSession}
-                onRemoveFromHistory={onRemoveFromHistory}
-              />
-            )}
-          </div>
+          <ControlPanel
+            mode={mode}
+            onModeChange={onModeChange}
+            session={session}
+            participantCount={participantCount}
+            isLoading={isLoading}
+            sessionHistory={sessionHistory}
+            onCreateSession={onCreateSession}
+            onJoinSession={onJoinSession}
+            onLeaveSession={onLeaveSession}
+            onRemoveFromHistory={onRemoveFromHistory}
+            isModeratorMode={isModeratorMode}
+            onToggleModeratorMode={onToggleModeratorMode}
+            onSetFocus={onSetFocus}
+            gameMode={gameMode}
+            gameSettings={gameSettings}
+            availableGameModes={availableGameModes}
+            isGameRunning={isGameRunning}
+            onGameModeChange={onGameModeChange}
+            onGameSettingsChange={onGameSettingsChange}
+          />
         </div>
       </div>
     </header>

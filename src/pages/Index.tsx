@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Layers, Lightbulb } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { CategorySection } from '@/components/CategorySection';
 import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
@@ -14,6 +14,7 @@ import { ProblemStatementBanner } from '@/components/ProblemStatementBanner';
 import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
 import { CompetitionEndModal } from '@/components/CompetitionEndModal';
+import { IdeasTray } from '@/components/IdeasTray';
 import { useCards, FilterMode } from '@/hooks/useCards';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
@@ -88,7 +89,7 @@ const Index = () => {
   });
   const [pendingModeChange, setPendingModeChange] = useState<'solo' | 'collaborative' | null>(null);
 
-  // Game mode hook (needs mode variable to be defined first)
+  // Game mode hook
   const gameMode = useGameMode(mode === 'collaborative');
 
   // Persist mode preference
@@ -105,7 +106,6 @@ const Index = () => {
 
   const handleModeChange = (newMode: 'solo' | 'collaborative') => {
     if (newMode === 'solo' && session) {
-      // Show confirmation dialog
       setPendingModeChange(newMode);
     } else {
       setMode(newMode);
@@ -194,7 +194,7 @@ const Index = () => {
     [getCardsForCategory, showModifiedOnly, isModeratorMode, hasOverride]
   );
 
-  // All cards for shuffling (include session wildcards) with overrides applied
+  // All cards for shuffling with overrides applied
   const allCardsForShuffle = useMemo(() => {
     const base = [...defaultCards, ...localWildcards].map((card) => ({
       ...card,
@@ -274,15 +274,7 @@ const Index = () => {
     setSelectedCards(newSelection);
   };
 
-  const handleReplaceCard = (category: Category, card: Card) => {
-    setSelectedCards((prev) => ({
-      ...prev,
-      [category]: card,
-    }));
-  };
-
   const handleSaveIdea = async (title: string, description: string, author?: string) => {
-    // Store participant name for competition mode
     if (author && author !== participantName) {
       setParticipantName(author);
       localStorage.setItem('brainstormy-participant-name', author);
@@ -296,14 +288,12 @@ const Index = () => {
         random: selectedCards.random?.text || '',
       };
       await addSessionIdea(title, description, author, cards);
-      // Increment score for collaborative competition mode
       if (collabGame.mode === 'competition' && collabGame.isRunning) {
         await collabGame.incrementScore();
       }
     } else {
       saveLocalIdea(title, description, author);
     }
-    // Increment ideas count for solo game mode
     gameMode.incrementIdeas();
   };
 
@@ -324,12 +314,16 @@ const Index = () => {
 
   const handleViewIdeas = () => {
     gameMode.closeEndModal();
-    const ideasSection = document.getElementById('ideas-section');
-    ideasSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Determine active game mode and canPlay
+  const activeGameMode = session ? collabGame.mode : gameMode.mode;
+  const activeCanPlay = session 
+    ? (collabGame.mode === 'freejam' || collabGame.isRunning) 
+    : gameMode.canPlay;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header
         mode={mode}
         onModeChange={handleModeChange}
@@ -344,7 +338,6 @@ const Index = () => {
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
         onSetFocus={() => setIsFocusEditorOpen(true)}
-        // Game mode props - use collaborative game mode when in session
         gameMode={session ? collabGame.mode : gameMode.mode}
         gameSettings={session ? collabGame.settings : gameMode.settings}
         availableGameModes={session ? ['freejam', 'time-attack', 'target', 'competition'] : gameMode.availableModes}
@@ -353,8 +346,8 @@ const Index = () => {
         onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
       />
 
-      <main className="container mx-auto px-4 py-12 md:py-16 space-y-16">
-        {/* Problem Statement Banner */}
+      <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
+        {/* Problem Statement Banner - compact */}
         {(session?.problem_statement || localProblemStatement) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -368,51 +361,53 @@ const Index = () => {
           </motion.div>
         )}
 
-        {/* Game HUD - Use collaborative game mode when in session */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          {session ? (
-            <GameHUD
-              mode={collabGame.mode}
-              settings={collabGame.settings}
-              isRunning={collabGame.isRunning}
-              isPaused={false}
-              timeRemaining={collabGame.timeRemaining}
-              ideasCount={sessionIdeas.length}
-              requiresStart={collabGame.mode !== 'freejam'}
-              formatTime={collabGame.formatTime}
-              onStart={collabGame.startGame}
-              onPause={() => {}}
-              onResume={() => {}}
-              onEnd={collabGame.endGame}
-              onReset={() => {}}
-              scores={collabGame.scores}
-              currentParticipant={participantName}
-              isCollaborative
-            />
-          ) : (
-            <GameHUD
-              mode={gameMode.mode}
-              settings={gameMode.settings}
-              isRunning={gameMode.isRunning}
-              isPaused={gameMode.isPaused}
-              timeRemaining={gameMode.timeRemaining}
-              ideasCount={gameMode.ideasCount}
-              requiresStart={gameMode.requiresStart}
-              formatTime={gameMode.formatTime}
-              onStart={gameMode.startGame}
-              onPause={gameMode.pauseGame}
-              onResume={gameMode.resumeGame}
-              onEnd={gameMode.endGame}
-              onReset={gameMode.resetGame}
-            />
-          )}
-        </motion.div>
+        {/* Game HUD - minimal, only shows for timed modes */}
+        {activeGameMode !== 'freejam' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {session ? (
+              <GameHUD
+                mode={collabGame.mode}
+                settings={collabGame.settings}
+                isRunning={collabGame.isRunning}
+                isPaused={false}
+                timeRemaining={collabGame.timeRemaining}
+                ideasCount={sessionIdeas.length}
+                requiresStart={collabGame.mode !== 'freejam'}
+                formatTime={collabGame.formatTime}
+                onStart={collabGame.startGame}
+                onPause={() => {}}
+                onResume={() => {}}
+                onEnd={collabGame.endGame}
+                onReset={() => {}}
+                scores={collabGame.scores}
+                currentParticipant={participantName}
+                isCollaborative
+              />
+            ) : (
+              <GameHUD
+                mode={gameMode.mode}
+                settings={gameMode.settings}
+                isRunning={gameMode.isRunning}
+                isPaused={gameMode.isPaused}
+                timeRemaining={gameMode.timeRemaining}
+                ideasCount={gameMode.ideasCount}
+                requiresStart={gameMode.requiresStart}
+                formatTime={gameMode.formatTime}
+                onStart={gameMode.startGame}
+                onPause={gameMode.pauseGame}
+                onResume={gameMode.resumeGame}
+                onEnd={gameMode.endGame}
+                onReset={gameMode.resetGame}
+              />
+            )}
+          </motion.div>
+        )}
 
-        {/* Shuffle Canvas - Hero */}
+        {/* Shuffle Canvas */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -424,16 +419,20 @@ const Index = () => {
             onTwist={() => setIsTwistOpen(true)}
             onClear={clearSelection}
             problemStatement={session?.problem_statement || localProblemStatement}
-            canPlay={session ? (collabGame.mode === 'freejam' || collabGame.isRunning) : gameMode.canPlay}
+            canPlay={activeCanPlay}
           />
         </motion.section>
 
-        {/* Secondary Navigation */}
-        <div className="flex justify-center gap-4 border-t border-border pt-12">
+        {/* Browse Library - smaller, more subtle */}
+        <div className="flex justify-center pt-8">
           <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="gap-2 font-mono text-xs uppercase tracking-wider">
-                <Layers className="w-4 h-4" />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+              >
+                <Layers className="w-3.5 h-3.5" />
                 Browse Library
               </Button>
             </SheetTrigger>
@@ -451,7 +450,6 @@ const Index = () => {
                 )}
               </SheetHeader>
               
-              {/* Library Header with Search and View Toggle */}
               <div className="mb-8">
                 <CardLibraryHeader
                   searchTerm={librarySearchTerm}
@@ -488,43 +486,18 @@ const Index = () => {
               </div>
             </SheetContent>
           </Sheet>
-
-          <Button 
-            variant="outline" 
-            className="gap-2 font-mono text-xs uppercase tracking-wider"
-            onClick={() => {
-              const ideasSection = document.getElementById('ideas-section');
-              ideasSection?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <Lightbulb className="w-4 h-4" />
-            View Ideas
-            {displayedIdeas.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
-                {displayedIdeas.length}
-              </span>
-            )}
-          </Button>
         </div>
-
-        {/* Ideas Section */}
-        <motion.section
-          id="ideas-section"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="border-t border-border pt-12"
-        >
-          {session ? (
-            <CollaborativeIdeaBoard ideas={sessionIdeas} onDelete={handleDeleteIdea} />
-          ) : (
-            <IdeaBoard ideas={localSavedIdeas} onDelete={handleDeleteIdea} />
-          )}
-        </motion.section>
       </main>
 
+      {/* Ideas Tray - collapsible footer */}
+      <IdeasTray
+        ideas={displayedIdeas}
+        onDelete={handleDeleteIdea}
+        isCollaborative={!!session}
+      />
+
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8 mt-16">
+      <footer className="border-t border-border/50 py-6">
         <div className="container mx-auto px-4 text-center">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Don't evaluate yet. Combine.
@@ -575,11 +548,7 @@ const Index = () => {
         scores={collabGame.scores}
         currentParticipant={participantName}
         onClose={collabGame.closeEndModal}
-        onViewIdeas={() => {
-          collabGame.closeEndModal();
-          const ideasSection = document.getElementById('ideas-section');
-          ideasSection?.scrollIntoView({ behavior: 'smooth' });
-        }}
+        onViewIdeas={collabGame.closeEndModal}
       />
 
       {/* Mode change confirmation dialog */}
