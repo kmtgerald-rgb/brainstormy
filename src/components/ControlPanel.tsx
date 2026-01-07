@@ -103,39 +103,42 @@ export function ControlPanel({
             </div>
           )}
 
-          <Separator />
-
-          {/* Moderator Controls */}
-          <div className="space-y-3">
-            <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              Facilitator
-            </label>
-            <div className="flex flex-col gap-2">
-              {onToggleModeratorMode && (
-                <Button
-                  variant={isModeratorMode ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={onToggleModeratorMode}
-                  className={cn(
-                    'justify-start font-mono text-xs uppercase tracking-wider',
-                    isModeratorMode && 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30'
+          {/* Moderator Controls - Only show in collaborative mode */}
+          {mode === 'collaborative' && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Facilitator
+                </label>
+                <div className="flex flex-col gap-2">
+                  {onToggleModeratorMode && (
+                    <Button
+                      variant={isModeratorMode ? 'secondary' : 'outline'}
+                      size="sm"
+                      onClick={onToggleModeratorMode}
+                      className={cn(
+                        'justify-start font-mono text-xs uppercase tracking-wider',
+                        isModeratorMode && 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30'
+                      )}
+                    >
+                      {isModeratorMode ? 'Moderator Mode On' : 'Enable Moderator Mode'}
+                    </Button>
                   )}
-                >
-                  {isModeratorMode ? 'Moderator Mode On' : 'Enable Moderator Mode'}
-                </Button>
-              )}
-              {isModeratorMode && onSetFocus && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onSetFocus}
-                  className="justify-start font-mono text-xs uppercase tracking-wider"
-                >
-                  Set Problem Focus
-                </Button>
-              )}
-            </div>
-          </div>
+                  {isModeratorMode && onSetFocus && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onSetFocus}
+                      className="justify-start font-mono text-xs uppercase tracking-wider"
+                    >
+                      Set Problem Focus
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Session Controls - Only show in collaborative mode */}
           {mode === 'collaborative' && onCreateSession && onJoinSession && onLeaveSession && onRemoveFromHistory && (
