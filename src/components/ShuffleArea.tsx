@@ -12,6 +12,7 @@ interface ShuffleAreaProps {
   isShuffling: boolean;
   suggestion?: { title: string; description: string } | null;
   onClearSuggestion: () => void;
+  onAddSuggestionToIdeas?: () => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -29,6 +30,7 @@ export function ShuffleArea({
   isShuffling,
   suggestion,
   onClearSuggestion,
+  onAddSuggestionToIdeas,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   
@@ -128,6 +130,14 @@ export function ShuffleArea({
               <p className="text-muted-foreground leading-relaxed">
                 {suggestion.description}
               </p>
+              {onAddSuggestionToIdeas && (
+                <button
+                  onClick={onAddSuggestionToIdeas}
+                  className="mt-2 font-mono text-xs uppercase tracking-wider text-foreground/70 hover:text-foreground underline underline-offset-4 transition-colors"
+                >
+                  + Add to Ideas
+                </button>
+              )}
             </div>
           </motion.div>
         )}

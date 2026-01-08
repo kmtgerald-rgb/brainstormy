@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight, Sparkles, X } from 'lucide-react';
 import { Card, Category } from '@/data/defaultCards';
-import { MashupCard } from './MashupCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,9 +14,8 @@ interface IdeaDrawerProps {
   onSave: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
   isCollaborative?: boolean;
   aiSuggestion?: { title: string; description: string } | null;
+  participantName?: string;
 }
-
-const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
 export function IdeaDrawer({ 
   isOpen, 
@@ -25,13 +23,17 @@ export function IdeaDrawer({
   selectedCards, 
   onSave, 
   isCollaborative = false,
-  aiSuggestion 
+  aiSuggestion,
+  participantName = ''
 }: IdeaDrawerProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [author, setAuthor] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUsingAI, setIsUsingAI] = useState(false);
+
+  // Only show author field in collaborative mode when no name is stored
+  const showAuthorField = isCollaborative && !participantName;
 
   // Pre-fill from AI suggestion if available
   useEffect(() => {
@@ -44,7 +46,9 @@ export function IdeaDrawer({
 
   const handleSave = () => {
     if (title.trim()) {
-      onSave(title.trim(), description.trim(), author.trim() || undefined, isUsingAI);
+      // Use stored participant name if available, otherwise use entered author
+      const authorName = participantName || author.trim() || undefined;
+      onSave(title.trim(), description.trim(), authorName, isUsingAI);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -168,17 +172,6 @@ export function IdeaDrawer({
                     </Button>
                   </div>
 
-                  {/* Selected Cards - Compact horizontal */}
-                  <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                    {categories.map((category) => (
-                      <div key={category} className="flex-shrink-0 w-24">
-                        {selectedCards[category] && (
-                          <MashupCard card={selectedCards[category]!} size="sm" animate={false} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
                   {/* AI Suggestion Prompt */}
                   {aiSuggestion && !isUsingAI && (
                     <motion.button
@@ -247,17 +240,19 @@ export function IdeaDrawer({
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Your name {!isCollaborative && '(optional)'}
-                      </label>
-                      <Input
-                        placeholder="Author"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        className="border-border"
-                      />
-                    </div>
+                    {showAuthorField && (
+                      <div className="space-y-2">
+                        <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Your name
+                        </label>
+                        <Input
+                          placeholder="Author"
+                          value={author}
+                          onChange={(e) => setAuthor(e.target.value)}
+                          className="border-border"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
