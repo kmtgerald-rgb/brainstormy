@@ -16,11 +16,13 @@ import { GameEndModal } from '@/components/GameEndModal';
 import { CompetitionEndModal } from '@/components/CompetitionEndModal';
 import { IdeasTray } from '@/components/IdeasTray';
 import { useCards, FilterMode } from '@/hooks/useCards';
+import { useDeckConfig } from '@/hooks/useDeckConfig';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
 import { useCollaborativeGameMode } from '@/hooks/useCollaborativeGameMode';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
+import { contentFormatCards, channelCards } from '@/data/deckVariants';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -51,6 +53,18 @@ const Index = () => {
     deleteIdea: deleteLocalIdea,
     wildcards: localWildcards,
   } = useCards();
+
+  const {
+    deckConfig,
+    isGenerating: isDeckGenerating,
+    setInsightVariant,
+    setTechVariant,
+    generateDeck,
+    getTechVariantCards,
+    getInsightVariantCards,
+    findGeneratedDeck,
+    getGeneratedDeckKey,
+  } = useDeckConfig();
 
   const {
     session,
@@ -194,12 +208,28 @@ const Index = () => {
     [getCardsForCategory, showModifiedOnly, isModeratorMode, hasOverride]
   );
 
-  // All cards for shuffling with overrides applied
+  // All cards for shuffling with overrides applied and deck variants
   const allCardsForShuffle = useMemo(() => {
-    const base = [...defaultCards, ...localWildcards].map((card) => ({
+    // Get base insight cards (either generated or default)
+    const insightVariantCards = getInsightVariantCards();
+    const insightCards = insightVariantCards || defaultCards.filter(c => c.category === 'insight');
+    
+    // Get tech variant cards (format, channel, or default)
+    const techVariantCards = getTechVariantCards();
+    const techCards = techVariantCards || defaultCards.filter(c => c.category === 'tech');
+    
+    // Get other category cards (asset, random)
+    const otherCards = defaultCards.filter(c => c.category === 'asset' || c.category === 'random');
+    
+    // Combine all cards
+    const baseCards = [...insightCards, ...techCards, ...otherCards, ...localWildcards];
+    
+    // Apply overrides
+    const withOverrides = baseCards.map((card) => ({
       ...card,
       text: getCardText(card.id, card.text),
     }));
+    
     if (session) {
       const sessionCards = sessionWildcards.map((w) => ({
         id: w.id,
@@ -207,10 +237,10 @@ const Index = () => {
         category: w.category,
         isWildcard: true,
       }));
-      return [...base, ...sessionCards];
+      return [...withOverrides, ...sessionCards];
     }
-    return base;
-  }, [localWildcards, session, sessionWildcards, getCardText]);
+    return withOverrides;
+  }, [localWildcards, session, sessionWildcards, getCardText, getInsightVariantCards, getTechVariantCards]);
 
   // Find original text for a card
   const getOriginalText = useCallback(
@@ -344,6 +374,12 @@ const Index = () => {
         isGameRunning={session ? collabGame.isRunning : gameMode.isRunning}
         onGameModeChange={session ? collabGame.updateGameMode : gameMode.changeMode}
         onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
+        deckConfig={deckConfig}
+        isDeckGenerating={isDeckGenerating}
+        onInsightVariantChange={setInsightVariant}
+        onTechVariantChange={setTechVariant}
+        onGenerateDeck={async (type, context, force) => { await generateDeck(type, context, force); }}
+        hasGeneratedDeck={(type, context) => !!findGeneratedDeck(getGeneratedDeckKey(type, context))}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">

@@ -199,7 +199,7 @@ export function MashupCard({
         'font-mono text-[10px] uppercase tracking-wider mb-2 block',
         categoryTextStyles[card.category]
       )}>
-        Insight
+        Why it matters
       </span>
 
       {explanationLoading ? (

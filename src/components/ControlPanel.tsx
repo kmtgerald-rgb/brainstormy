@@ -10,9 +10,11 @@ import {
 import { ModeToggle } from './ModeToggle';
 import { GameModeSelector } from './GameModeSelector';
 import { SessionPanel } from './SessionPanel';
+import { DeckConfigSection } from './DeckConfigSection';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
+import { DeckConfig, InsightVariant, TechVariant } from '@/data/deckVariants';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -36,6 +38,13 @@ interface ControlPanelProps {
   isGameRunning?: boolean;
   onGameModeChange?: (mode: GameMode) => void;
   onGameSettingsChange?: (settings: Partial<GameSettings>) => void;
+  // Deck configuration props
+  deckConfig?: DeckConfig;
+  isDeckGenerating?: boolean;
+  onInsightVariantChange?: (variant: InsightVariant, context?: string) => void;
+  onTechVariantChange?: (variant: TechVariant) => void;
+  onGenerateDeck?: (type: 'industry' | 'region', context: string, forceRegenerate?: boolean) => Promise<void>;
+  hasGeneratedDeck?: (type: 'industry' | 'region', context: string) => boolean;
 }
 
 export function ControlPanel({
@@ -53,6 +62,13 @@ export function ControlPanel({
   onToggleModeratorMode,
   onSetFocus,
   gameMode = 'freejam',
+  // Deck configuration
+  deckConfig,
+  isDeckGenerating = false,
+  onInsightVariantChange,
+  onTechVariantChange,
+  onGenerateDeck,
+  hasGeneratedDeck,
   gameSettings = { duration: 300, targetCount: 10 },
   availableGameModes = ['freejam', 'time-attack', 'target'],
   isGameRunning = false,
@@ -103,7 +119,20 @@ export function ControlPanel({
             </div>
           )}
 
-          {/* Moderator Controls - Only show in collaborative mode */}
+          {/* Deck Configuration */}
+          {deckConfig && onInsightVariantChange && onTechVariantChange && onGenerateDeck && hasGeneratedDeck && (
+            <>
+              <Separator />
+              <DeckConfigSection
+                deckConfig={deckConfig}
+                isGenerating={isDeckGenerating}
+                onInsightVariantChange={onInsightVariantChange}
+                onTechVariantChange={onTechVariantChange}
+                onGenerateDeck={onGenerateDeck}
+                hasGeneratedDeck={hasGeneratedDeck}
+              />
+            </>
+          )}
           {mode === 'collaborative' && (
             <>
               <Separator />
