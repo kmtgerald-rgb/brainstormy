@@ -59,6 +59,13 @@ export function useModerator() {
     localStorage.removeItem(CARD_OVERRIDES_KEY);
   }, []);
 
+  const resetProblemStatement = useCallback(() => {
+    localStorage.removeItem(PROBLEM_CONTEXT_KEY);
+    localStorage.removeItem(PROBLEM_STATEMENT_KEY);
+    setLocalProblemContext(null);
+    setLocalProblemStatement(null);
+  }, []);
+
   const getCardText = useCallback(
     (cardId: string, originalText: string): string => {
       return cardOverrides[cardId] ?? originalText;
@@ -94,6 +101,7 @@ export function useModerator() {
     updateCardText,
     resetCardText,
     resetAllOverrides,
+    resetProblemStatement,
     getCardText,
     hasOverride,
     cardOverrides,

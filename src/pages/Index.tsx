@@ -79,6 +79,8 @@ const Index = () => {
     toggleModeratorMode,
     updateCardText,
     resetCardText,
+    resetAllOverrides,
+    resetProblemStatement,
     getCardText,
     hasOverride,
     localProblemContext,
@@ -398,6 +400,21 @@ const Index = () => {
     gameMode.closeEndModal();
   };
 
+  // Global reset function - clears deck, ideas, problem focus, and card overrides
+  const handleGlobalReset = useCallback(() => {
+    // Reset deck manager (presets, wildcards, generated cards)
+    deckManager.resetAll();
+    // Reset saved ideas
+    setSavedIdeas([]);
+    localStorage.removeItem(SAVED_IDEAS_KEY);
+    // Reset problem statement
+    resetProblemStatement();
+    // Reset card overrides
+    resetAllOverrides();
+    // Clear current cards
+    handleClear();
+  }, [deckManager, resetProblemStatement, resetAllOverrides, handleClear]);
+
   // Determine active game mode and canPlay
   const activeGameMode = session ? collabGame.mode : gameMode.mode;
   const activeCanPlay = session 
@@ -444,7 +461,7 @@ const Index = () => {
         getCardsForCategory={deckManager.getCardsForCategory}
         onExportPresets={deckManager.exportPresets}
         onImportPresets={deckManager.importPresets}
-        onResetDeck={deckManager.resetAll}
+        onResetDeck={handleGlobalReset}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
