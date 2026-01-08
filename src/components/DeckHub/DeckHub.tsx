@@ -198,9 +198,9 @@ export function DeckHub({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Reset all deck settings?</AlertDialogTitle>
+                    <AlertDialogTitle>Reset everything?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will delete all custom presets, wildcards, and AI-generated cards. Default presets will be restored. This action cannot be undone.
+                      This will clear all custom presets, wildcards, AI-generated cards, saved ideas, problem focus, and card edits. Default presets will be restored. This cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
