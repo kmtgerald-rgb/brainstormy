@@ -490,20 +490,6 @@ const Index = () => {
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
-        {/* Problem Statement Banner - compact */}
-        {(session?.problem_statement || localProblemStatement) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <ProblemStatementBanner
-              statement={session?.problem_statement || localProblemStatement}
-              isModeratorMode={isModeratorMode}
-              onEdit={() => setIsFocusEditorOpen(true)}
-            />
-          </motion.div>
-        )}
-
         {/* Game HUD - minimal, only shows for timed modes */}
         {activeGameMode !== 'freejam' && (
           <motion.div
@@ -563,6 +549,8 @@ const Index = () => {
             suggestion={suggestion}
             onClearSuggestion={clearSuggestion}
             onAddSuggestionToIdeas={handleAddSuggestionToIdeas}
+            problemStatement={session?.problem_statement || localProblemStatement}
+            onEditProblem={() => setIsFocusEditorOpen(true)}
           />
         </motion.section>
 
