@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { SavedIdea } from '@/hooks/useCards';
 import { SessionIdea } from '@/hooks/useSession';
 import { IdeaBoard } from './IdeaBoard';
@@ -16,13 +16,26 @@ interface IdeasTrayProps {
 export function IdeasTray({ ideas, onDelete, isCollaborative = false }: IdeasTrayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Calculate separate counts for user ideas and AI sparks
+  const { userIdeasCount, aiSparksCount } = useMemo(() => {
+    if (isCollaborative) {
+      return { userIdeasCount: ideas.length, aiSparksCount: 0 };
+    }
+    const savedIdeas = ideas as SavedIdea[];
+    const aiCount = savedIdeas.filter(idea => idea.isAIGenerated).length;
+    return {
+      userIdeasCount: savedIdeas.length - aiCount,
+      aiSparksCount: aiCount,
+    };
+  }, [ideas, isCollaborative]);
+
   return (
     <div className="border-t border-border">
       {/* Tray Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          'w-full py-4 px-4 flex items-center justify-center gap-2',
+          'w-full py-4 px-4 flex items-center justify-center gap-3',
           'font-mono text-xs uppercase tracking-wider',
           'text-muted-foreground hover:text-foreground transition-colors',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -33,12 +46,32 @@ export function IdeasTray({ ideas, onDelete, isCollaborative = false }: IdeasTra
         ) : (
           <ChevronUp className="w-4 h-4" />
         )}
-        Your Ideas
-        {ideas.length > 0 && (
-          <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
-            {ideas.length}
+        
+        <span className="flex items-center gap-3">
+          {/* User Ideas */}
+          <span className="flex items-center gap-1.5">
+            Your Ideas
+            {userIdeasCount > 0 && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
+                {userIdeasCount}
+              </span>
+            )}
           </span>
-        )}
+
+          {/* AI Sparks - only show if there are any */}
+          {aiSparksCount > 0 && (
+            <>
+              <span className="text-muted-foreground/50">|</span>
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-primary" />
+                AI Sparks
+                <span className="px-1.5 py-0.5 text-[10px] bg-primary text-primary-foreground rounded-full">
+                  {aiSparksCount}
+                </span>
+              </span>
+            </>
+          )}
+        </span>
       </button>
 
       {/* Expandable Content */}

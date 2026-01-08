@@ -6,7 +6,7 @@ import { CategorySection } from '@/components/CategorySection';
 import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
 import { ShuffleArea } from '@/components/ShuffleArea';
 import { FloatingActionBar } from '@/components/FloatingActionBar';
-import { TwistModal } from '@/components/TwistModal';
+import { IdeaDrawer } from '@/components/IdeaDrawer';
 import { IdeaBoard } from '@/components/IdeaBoard';
 import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
 import { EditCardDialog } from '@/components/EditCardDialog';
@@ -331,7 +331,7 @@ const Index = () => {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
 
-  const handleSaveIdea = async (title: string, description: string, author?: string) => {
+  const handleSaveIdea = async (title: string, description: string, author?: string, isAIGenerated?: boolean) => {
     if (author && author !== participantName) {
       setParticipantName(author);
       localStorage.setItem('brainstormy-participant-name', author);
@@ -349,9 +349,10 @@ const Index = () => {
         await collabGame.incrementScore();
       }
     } else {
-      saveLocalIdea(title, description, author);
+      saveLocalIdea(title, description, author, isAIGenerated);
     }
     gameMode.incrementIdeas();
+    clearSuggestion(); // Clear AI suggestion after saving
   };
 
   const handleDeleteIdea = async (id: string) => {
@@ -580,12 +581,13 @@ const Index = () => {
         </div>
       </footer>
 
-      <TwistModal
+      <IdeaDrawer
         isOpen={isTwistOpen}
         onClose={() => setIsTwistOpen(false)}
         selectedCards={selectedCards}
         onSave={handleSaveIdea}
         isCollaborative={!!session}
+        aiSuggestion={suggestion}
       />
 
       <EditCardDialog
