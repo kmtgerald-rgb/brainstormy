@@ -11,6 +11,7 @@ export interface SavedIdea {
   cards: Card[];
   author?: string;
   createdAt: Date;
+  isAIGenerated?: boolean;
 }
 
 export type FilterMode = 'all' | 'default' | 'wildcards';
@@ -96,7 +97,7 @@ export function useCards() {
   }, [allCards]);
 
   const saveIdea = useCallback(
-    (title: string, description: string, author?: string) => {
+    (title: string, description: string, author?: string, isAIGenerated?: boolean) => {
       const cards = Object.values(selectedCards).filter((c): c is Card => c !== null);
       if (cards.length !== 4) return null;
 
@@ -107,6 +108,7 @@ export function useCards() {
         cards,
         author,
         createdAt: new Date(),
+        isAIGenerated: isAIGenerated || false,
       };
 
       setSavedIdeas((prev) => {
