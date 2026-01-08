@@ -1,5 +1,7 @@
-import { Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Sheet,
   SheetContent,
@@ -61,6 +63,8 @@ interface ControlPanelProps {
   onExportPresets: () => string;
   onImportPresets: (json: string) => void;
   onResetDeck: () => void;
+  participantName?: string;
+  onParticipantNameChange?: (name: string) => void;
 }
 
 export function ControlPanel({
@@ -102,7 +106,24 @@ export function ControlPanel({
   onExportPresets,
   onImportPresets,
   onResetDeck,
+  participantName = '',
+  onParticipantNameChange,
 }: ControlPanelProps) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(participantName);
+
+  const handleSaveName = () => {
+    if (onParticipantNameChange && editedName.trim()) {
+      onParticipantNameChange(editedName.trim());
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(participantName);
+    setIsEditingName(false);
+  };
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -207,6 +228,46 @@ export function ControlPanel({
                   onRemoveFromHistory={onRemoveFromHistory}
                 />
               </div>
+
+              {/* Participant Name */}
+              {onParticipantNameChange && (
+                <div className="space-y-3">
+                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Your Name
+                  </label>
+                  {isEditingName ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="flex-1 h-8 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveName();
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                      />
+                      <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditedName(participantName);
+                        setIsEditingName(true);
+                      }}
+                      className="justify-start gap-2 w-full font-mono text-xs"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      {participantName || 'Set your name'}
+                    </Button>
+                  )}
+                </div>
+              )}
             </>
           )}
 

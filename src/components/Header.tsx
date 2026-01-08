@@ -46,6 +46,8 @@ interface HeaderProps {
   onExportPresets: () => string;
   onImportPresets: (json: string) => void;
   onResetDeck: () => void;
+  participantName?: string;
+  onParticipantNameChange?: (name: string) => void;
 }
 
 export function Header({
@@ -87,6 +89,8 @@ export function Header({
   onExportPresets,
   onImportPresets,
   onResetDeck,
+  participantName,
+  onParticipantNameChange,
 }: HeaderProps) {
   return (
     <header className="border-b border-border/50 bg-background sticky top-0 z-50">
@@ -133,6 +137,8 @@ export function Header({
             onExportPresets={onExportPresets}
             onImportPresets={onImportPresets}
             onResetDeck={onResetDeck}
+            participantName={participantName}
+            onParticipantNameChange={onParticipantNameChange}
           />
         </div>
       </div>

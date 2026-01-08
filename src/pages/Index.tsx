@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Layers } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { CategorySection } from '@/components/CategorySection';
 import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
@@ -155,7 +154,6 @@ const Index = () => {
 
   const [isTwistOpen, setIsTwistOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
@@ -381,6 +379,28 @@ const Index = () => {
     clearSuggestion();
   };
 
+  // Direct save of AI suggestion to ideas
+  const handleAddSuggestionToIdeas = useCallback(async () => {
+    if (!suggestion) return;
+    
+    if (session) {
+      const cards = {
+        insight: selectedCards.insight?.text || '',
+        asset: selectedCards.asset?.text || '',
+        tech: selectedCards.tech?.text || '',
+        random: selectedCards.random?.text || '',
+      };
+      await addSessionIdea(suggestion.title, suggestion.description, participantName || undefined, cards);
+      if (collabGame.mode === 'competition' && collabGame.isRunning) {
+        await collabGame.incrementScore();
+      }
+    } else {
+      saveLocalIdea(suggestion.title, suggestion.description, undefined, true);
+    }
+    gameMode.incrementIdeas();
+    clearSuggestion();
+  }, [suggestion, session, selectedCards, participantName, addSessionIdea, collabGame, saveLocalIdea, gameMode, clearSuggestion]);
+
   const handleDeleteIdea = async (id: string) => {
     if (session) {
       await deleteSessionIdea(id);
@@ -462,6 +482,11 @@ const Index = () => {
         onExportPresets={deckManager.exportPresets}
         onImportPresets={deckManager.importPresets}
         onResetDeck={handleGlobalReset}
+        participantName={participantName}
+        onParticipantNameChange={(name) => {
+          setParticipantName(name);
+          localStorage.setItem('brainstormy-participant-name', name);
+        }}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
@@ -537,73 +562,10 @@ const Index = () => {
             isShuffling={isShuffling}
             suggestion={suggestion}
             onClearSuggestion={clearSuggestion}
+            onAddSuggestionToIdeas={handleAddSuggestionToIdeas}
           />
         </motion.section>
 
-        {/* Browse Library */}
-        <div className="flex justify-center pt-8">
-          <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
-              >
-                <Layers className="w-3.5 h-3.5" />
-                Browse Library
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-              <SheetHeader className="mb-6">
-                <SheetTitle className="font-serif text-2xl">Card Library</SheetTitle>
-                <p className="text-sm text-muted-foreground">
-                  Browse all cards or create your own wildcards
-                  {session && ' (shared with session)'}
-                </p>
-                {isModeratorMode && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-600 text-xs font-mono uppercase tracking-wider mt-2">
-                    Moderator Mode: Click any card to edit
-                  </div>
-                )}
-              </SheetHeader>
-              
-              <div className="mb-8">
-                <CardLibraryHeader
-                  searchTerm={librarySearchTerm}
-                  onSearchChange={setLibrarySearchTerm}
-                  viewMode={libraryViewMode}
-                  onViewModeChange={setLibraryViewMode}
-                  showModifiedOnly={showModifiedOnly}
-                  onShowModifiedOnlyChange={setShowModifiedOnly}
-                  isModeratorMode={isModeratorMode}
-                />
-              </div>
-              
-              <div className="space-y-10">
-                {categories.map((category) => (
-                  <CategorySection
-                    key={category}
-                    category={category}
-                    cards={getLibraryCards(category, categoryFilters[category])}
-                    allCards={allCardsForShuffle}
-                    filter={categoryFilters[category]}
-                    onFilterChange={(filter) => handleFilterChange(category, filter)}
-                    onAddWildcard={handleAddWildcard}
-                    onRemoveWildcard={handleRemoveWildcard}
-                    isModeratorMode={isModeratorMode}
-                    onEditCard={handleEditCard}
-                    hasOverride={hasOverride}
-                    viewMode={libraryViewMode}
-                    searchTerm={librarySearchTerm}
-                    onInlineEdit={handleSaveCardEdit}
-                    onResetCard={handleResetCard}
-                    problemStatement={session?.problem_statement || localProblemStatement}
-                  />
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
       </main>
 
       {/* Ideas Tray - collapsible footer */}
@@ -642,6 +604,7 @@ const Index = () => {
         onSave={handleSaveIdea}
         isCollaborative={!!session}
         aiSuggestion={suggestion}
+        participantName={participantName}
       />
 
       <EditCardDialog

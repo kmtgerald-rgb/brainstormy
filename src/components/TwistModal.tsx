@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight } from 'lucide-react';
-import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
-import { MashupCard } from './MashupCard';
+import { Card, Category } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,19 +16,23 @@ interface TwistModalProps {
   selectedCards: Record<Category, Card | null>;
   onSave: (title: string, description: string, author?: string) => void;
   isCollaborative?: boolean;
+  participantName?: string;
 }
 
-const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
-
-export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollaborative = false }: TwistModalProps) {
+export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollaborative = false, participantName = '' }: TwistModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [author, setAuthor] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Only show author field in collaborative mode when no name is stored
+  const showAuthorField = isCollaborative && !participantName;
+
   const handleSave = () => {
     if (title.trim()) {
-      onSave(title.trim(), description.trim(), author.trim() || undefined);
+      // Use stored participant name if available, otherwise use entered author
+      const authorName = participantName || author.trim() || undefined;
+      onSave(title.trim(), description.trim(), authorName);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -50,7 +53,7 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border-border">
         <AnimatePresence mode="wait">
           {showSuccess ? (
             <motion.div
@@ -78,7 +81,7 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-8 p-8"
+              className="space-y-6 p-8"
             >
               {/* Header */}
               <div className="space-y-2">
@@ -91,22 +94,6 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
                     This idea will be shared with your session.
                   </p>
                 )}
-              </div>
-
-              {/* Selected Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {categories.map((category, index) => (
-                  <motion.div
-                    key={category}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    {selectedCards[category] && (
-                      <MashupCard card={selectedCards[category]!} size="sm" animate={false} />
-                    )}
-                  </motion.div>
-                ))}
               </div>
 
               {/* Form */}
@@ -136,17 +123,19 @@ export function TwistModal({ isOpen, onClose, selectedCards, onSave, isCollabora
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Your name {!isCollaborative && '(optional)'}
-                  </label>
-                  <Input
-                    placeholder="Author"
-                    value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    className="border-border"
-                  />
-                </div>
+                {showAuthorField && (
+                  <div className="space-y-2">
+                    <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Your name
+                    </label>
+                    <Input
+                      placeholder="Author"
+                      value={author}
+                      onChange={(e) => setAuthor(e.target.value)}
+                      className="border-border"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
