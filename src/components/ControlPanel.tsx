@@ -11,9 +11,13 @@ import { ModeToggle } from './ModeToggle';
 import { GameModeSelector } from './GameModeSelector';
 import { SessionPanel } from './SessionPanel';
 import { HowItWorks } from './HowItWorks';
+import { DeckHub } from './DeckHub';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
+import { DeckPreset } from '@/hooks/useDeckManager';
+import { Card, Category } from '@/data/defaultCards';
+import { InsightVariant, TechVariant } from '@/data/deckVariants';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -37,6 +41,26 @@ interface ControlPanelProps {
   isGameRunning?: boolean;
   onGameModeChange?: (mode: GameMode) => void;
   onGameSettingsChange?: (settings: Partial<GameSettings>) => void;
+  
+  // Deck Hub props
+  deckPresets: DeckPreset[];
+  activeDeckPreset: DeckPreset;
+  deckWildcards: Card[];
+  isDeckGenerating: boolean;
+  onActivateDeckPreset: (presetId: string) => void;
+  onCreateDeckPreset: (name: string) => void;
+  onDuplicateDeckPreset: (presetId: string) => void;
+  onDeleteDeckPreset: (presetId: string) => void;
+  onInsightChange: (variant: InsightVariant, context?: string) => void;
+  onCatalystChange: (variant: TechVariant) => void;
+  onGenerateDeck: (forceRegenerate?: boolean) => void;
+  onAddWildcard: (text: string, category: Category) => void;
+  onRemoveWildcard: (id: string) => void;
+  onEditWildcard?: (id: string, text: string) => void;
+  getCardsForCategory: (category: Category) => Card[];
+  onExportPresets: () => string;
+  onImportPresets: (json: string) => void;
+  onResetDeck: () => void;
 }
 
 export function ControlPanel({
@@ -59,6 +83,25 @@ export function ControlPanel({
   isGameRunning = false,
   onGameModeChange,
   onGameSettingsChange,
+  // Deck Hub props
+  deckPresets,
+  activeDeckPreset,
+  deckWildcards,
+  isDeckGenerating,
+  onActivateDeckPreset,
+  onCreateDeckPreset,
+  onDuplicateDeckPreset,
+  onDeleteDeckPreset,
+  onInsightChange,
+  onCatalystChange,
+  onGenerateDeck,
+  onAddWildcard,
+  onRemoveWildcard,
+  onEditWildcard,
+  getCardsForCategory,
+  onExportPresets,
+  onImportPresets,
+  onResetDeck,
 }: ControlPanelProps) {
   return (
     <Sheet>
@@ -67,7 +110,7 @@ export function ControlPanel({
           <Settings className="h-4 w-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-80 sm:w-96">
+      <SheetContent side="right" className="w-80 sm:w-96 overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle className="font-serif text-xl">Settings</SheetTitle>
         </SheetHeader>
@@ -166,6 +209,30 @@ export function ControlPanel({
               </div>
             </>
           )}
+
+          <Separator />
+
+          {/* Deck Hub */}
+          <DeckHub
+            presets={deckPresets}
+            activePreset={activeDeckPreset}
+            wildcards={deckWildcards}
+            isGenerating={isDeckGenerating}
+            onActivatePreset={onActivateDeckPreset}
+            onCreatePreset={onCreateDeckPreset}
+            onDuplicatePreset={onDuplicateDeckPreset}
+            onDeletePreset={onDeleteDeckPreset}
+            onInsightChange={onInsightChange}
+            onCatalystChange={onCatalystChange}
+            onGenerate={onGenerateDeck}
+            onAddWildcard={onAddWildcard}
+            onRemoveWildcard={onRemoveWildcard}
+            onEditWildcard={onEditWildcard}
+            getCardsForCategory={getCardsForCategory}
+            onExport={onExportPresets}
+            onImport={onImportPresets}
+            onReset={onResetDeck}
+          />
         </div>
       </SheetContent>
     </Sheet>
