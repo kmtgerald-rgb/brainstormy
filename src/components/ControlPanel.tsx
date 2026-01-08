@@ -1,4 +1,4 @@
-import { Settings, X } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -11,6 +11,7 @@ import { ModeToggle } from './ModeToggle';
 import { GameModeSelector } from './GameModeSelector';
 import { SessionPanel } from './SessionPanel';
 import { DeckConfigSection } from './DeckConfigSection';
+import { HowItWorks } from './HowItWorks';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
@@ -88,6 +89,11 @@ export function ControlPanel({
         </SheetHeader>
 
         <div className="mt-8 space-y-8">
+          {/* How It Works */}
+          <HowItWorks />
+
+          <Separator />
+
           {/* Mode Toggle */}
           <div className="space-y-3">
             <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">

@@ -28,7 +28,7 @@ export const insightVariantLabels: Record<InsightVariant, string> = {
   region: 'Regional Insight',
 };
 
-export const techVariantLabels: Record<TechVariant, string> = {
+export const catalystVariantLabels: Record<TechVariant, string> = {
   technology: 'New Technology',
   format: 'Content Format',
   channel: 'Channel',

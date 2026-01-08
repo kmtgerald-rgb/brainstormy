@@ -11,14 +11,14 @@ export interface Card {
 export const categoryLabels: Record<Category, string> = {
   insight: 'Consumer Insight',
   asset: 'Existing Asset',
-  tech: 'New Technology',
+  tech: 'Catalyst',
   random: 'Random / Misc',
 };
 
 export const categoryShortLabels: Record<Category, string> = {
   insight: 'Insight',
   asset: 'Asset',
-  tech: 'Tech',
+  tech: 'Catalyst',
   random: 'Random',
 };
 

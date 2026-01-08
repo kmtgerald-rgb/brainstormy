@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { CategorySection } from '@/components/CategorySection';
 import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
 import { ShuffleArea } from '@/components/ShuffleArea';
+import { FloatingActionBar } from '@/components/FloatingActionBar';
 import { TwistModal } from '@/components/TwistModal';
 import { IdeaBoard } from '@/components/IdeaBoard';
 import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
@@ -21,6 +22,7 @@ import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
 import { useCollaborativeGameMode } from '@/hooks/useCollaborativeGameMode';
+import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { contentFormatCards, channelCards } from '@/data/deckVariants';
 import { Button } from '@/components/ui/button';
@@ -145,9 +147,14 @@ const Index = () => {
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffleKey, setShuffleKey] = useState(0);
   const [participantName, setParticipantName] = useState(() => {
     return localStorage.getItem('brainstormy-participant-name') || '';
   });
+  
+  // AI suggestion hook
+  const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
   
   // Card Library state
   const [libraryViewMode, setLibraryViewMode] = useState<ViewMode>('grid');
@@ -286,23 +293,43 @@ const Index = () => {
   };
 
   const handleShuffle = () => {
-    const newSelection: Record<Category, Card | null> = {
-      insight: null,
-      asset: null,
-      tech: null,
-      random: null,
-    };
+    setIsShuffling(true);
+    clearSuggestion();
+    
+    setTimeout(() => {
+      const newSelection: Record<Category, Card | null> = {
+        insight: null,
+        asset: null,
+        tech: null,
+        random: null,
+      };
 
-    categories.forEach((category) => {
-      const categoryCards = allCardsForShuffle.filter((c) => c.category === category);
-      if (categoryCards.length > 0) {
-        const randomIndex = Math.floor(Math.random() * categoryCards.length);
-        newSelection[category] = categoryCards[randomIndex];
-      }
-    });
+      categories.forEach((category) => {
+        const categoryCards = allCardsForShuffle.filter((c) => c.category === category);
+        if (categoryCards.length > 0) {
+          const randomIndex = Math.floor(Math.random() * categoryCards.length);
+          newSelection[category] = categoryCards[randomIndex];
+        }
+      });
 
-    setSelectedCards(newSelection);
+      setSelectedCards(newSelection);
+      setShuffleKey((k) => k + 1);
+      setIsShuffling(false);
+    }, 200);
   };
+
+  const handleClear = () => {
+    clearSuggestion();
+    clearSelection();
+  };
+
+  const handleGetSuggestion = () => {
+    getSuggestion(selectedCards, session?.problem_statement || localProblemStatement);
+  };
+
+  // Derive card states
+  const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
+  const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
 
   const handleSaveIdea = async (title: string, description: string, author?: string) => {
     if (author && author !== participantName) {
@@ -451,11 +478,10 @@ const Index = () => {
         >
           <ShuffleArea
             selectedCards={selectedCards}
-            onShuffle={handleShuffle}
-            onTwist={() => setIsTwistOpen(true)}
-            onClear={clearSelection}
-            problemStatement={session?.problem_statement || localProblemStatement}
-            canPlay={activeCanPlay}
+            shuffleKey={shuffleKey}
+            isShuffling={isShuffling}
+            suggestion={suggestion}
+            onClearSuggestion={clearSuggestion}
           />
         </motion.section>
 
@@ -532,8 +558,21 @@ const Index = () => {
         isCollaborative={!!session}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-6">
+      {/* Floating Action Bar */}
+      <FloatingActionBar
+        hasAnyCard={hasAnyCard}
+        hasAllCards={hasAllCards}
+        isShuffling={isShuffling}
+        isAILoading={isAILoading}
+        canPlay={activeCanPlay}
+        onShuffle={handleShuffle}
+        onTwist={() => setIsTwistOpen(true)}
+        onAISuggest={handleGetSuggestion}
+        onClear={handleClear}
+      />
+
+      {/* Footer - add padding for floating bar */}
+      <footer className="border-t border-border/50 py-6 pb-24">
         <div className="container mx-auto px-4 text-center">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Don't evaluate yet. Combine.

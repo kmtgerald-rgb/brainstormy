@@ -10,7 +10,7 @@ import {
   InsightVariant,
   TechVariant,
   insightVariantLabels,
-  techVariantLabels,
+  catalystVariantLabels,
 } from '@/data/deckVariants';
 
 interface DeckConfigSectionProps {
@@ -140,24 +140,24 @@ export function DeckConfigSection({
         </RadioGroup>
       </div>
 
-      {/* Tech Deck Configuration */}
+      {/* Catalyst Deck Configuration */}
       <div className="space-y-3">
         <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-          Tech Deck
+          Catalyst Deck
         </label>
         <RadioGroup
           value={deckConfig.tech.variant}
           onValueChange={(v) => onTechVariantChange(v as TechVariant)}
           className="space-y-2"
         >
-          {(Object.keys(techVariantLabels) as TechVariant[]).map((variant) => (
+          {(Object.keys(catalystVariantLabels) as TechVariant[]).map((variant) => (
             <div key={variant} className="flex items-center space-x-2">
               <RadioGroupItem value={variant} id={`tech-${variant}`} />
               <Label
                 htmlFor={`tech-${variant}`}
                 className="font-mono text-xs uppercase tracking-wider cursor-pointer"
               >
-                {techVariantLabels[variant]}
+                {catalystVariantLabels[variant]}
               </Label>
             </div>
           ))}
