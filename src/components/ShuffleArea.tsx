@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, RotateCcw, Wand2, Loader2, X, ArrowRight, Lightbulb } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { useCardExplanation } from '@/hooks/useCardExplanation';
 
 interface ShuffleAreaProps {
   selectedCards: Record<Category, Card | null>;
-  onShuffle: () => void;
-  onTwist: () => void;
-  onClear: () => void;
-  problemStatement?: string | null;
-  canPlay?: boolean;
+  shuffleKey: number;
+  isShuffling: boolean;
+  suggestion?: { title: string; description: string } | null;
+  onClearSuggestion: () => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -28,18 +25,13 @@ const categoryAccentStyles: Record<Category, string> = {
 
 export function ShuffleArea({ 
   selectedCards, 
-  onShuffle, 
-  onTwist, 
-  onClear, 
-  problemStatement,
-  canPlay = true
+  shuffleKey,
+  isShuffling,
+  suggestion,
+  onClearSuggestion,
 }: ShuffleAreaProps) {
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [shuffleKey, setShuffleKey] = useState(0);
-  const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   
-  const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
   const { getExplanation, getState, prefetchExplanations } = useCardExplanation();
 
   // Pre-fetch explanations when cards are drawn
@@ -49,25 +41,6 @@ export function ShuffleArea({
       prefetchExplanations(cards);
     }
   }, [selectedCards, prefetchExplanations]);
-
-  const handleShuffle = () => {
-    setIsShuffling(true);
-    clearSuggestion();
-    setTimeout(() => {
-      onShuffle();
-      setShuffleKey((k) => k + 1);
-      setIsShuffling(false);
-    }, 200);
-  };
-
-  const handleClear = () => {
-    clearSuggestion();
-    onClear();
-  };
-
-  const handleGetSuggestion = () => {
-    getSuggestion(selectedCards, problemStatement);
-  };
 
   const handleCardFlip = (card: Card) => {
     getExplanation(card);
@@ -140,7 +113,7 @@ export function ShuffleArea({
             className="relative mx-auto max-w-2xl p-6 bg-card border border-border card-shadow"
           >
             <button
-              onClick={clearSuggestion}
+              onClick={onClearSuggestion}
               className="absolute top-4 right-4 p-1 rounded hover:bg-muted transition-colors"
             >
               <X className="w-4 h-4 text-muted-foreground" />
@@ -159,73 +132,6 @@ export function ShuffleArea({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Primary Action */}
-      <div className="flex flex-col items-center gap-4">
-        {!hasAnyCard ? (
-          <Button
-            size="lg"
-            onClick={handleShuffle}
-            disabled={isShuffling || !canPlay}
-            className="gap-3 px-12 py-6 text-lg font-mono uppercase tracking-wider"
-          >
-            <Shuffle className={cn('w-5 h-5', isShuffling && 'animate-spin')} />
-            Shuffle
-          </Button>
-        ) : (
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            {hasAllCards && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Button
-                  size="lg"
-                  onClick={onTwist}
-                  className="gap-3 px-10 py-6 text-lg font-mono uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90"
-                >
-                  <Lightbulb className="w-5 h-5" />
-                  TWIST
-                </Button>
-              </motion.div>
-            )}
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleShuffle}
-              disabled={isShuffling || !canPlay}
-              className="gap-2 font-mono text-xs uppercase tracking-wider"
-            >
-              <Shuffle className={cn('w-4 h-4', isShuffling && 'animate-spin')} />
-              Reshuffle
-            </Button>
-            {hasAllCards && (
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={handleGetSuggestion}
-                disabled={isAILoading}
-                className="gap-2 font-mono text-xs uppercase tracking-wider"
-              >
-                {isAILoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Wand2 className="w-4 h-4" />
-                )}
-                AI Suggest
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="text-muted-foreground"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
