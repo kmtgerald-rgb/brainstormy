@@ -79,7 +79,7 @@ export function IdeaBoard({ ideas, onDelete }: IdeaBoardProps) {
       <h3 className="font-serif text-xl mb-2 pr-8">{idea.title}</h3>
       
       {idea.description && (
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{idea.description}</p>
+        <p className="text-sm text-muted-foreground mb-4">{idea.description}</p>
       )}
 
       {/* Source cards */}

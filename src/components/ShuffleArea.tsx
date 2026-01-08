@@ -49,7 +49,7 @@ export function ShuffleArea({
   };
 
   return (
-    <div className="text-center space-y-12">
+    <div className="text-center space-y-8 min-h-[50vh] flex flex-col justify-center">
       {/* Hero text - only show when no cards */}
       <AnimatePresence>
         {!hasAnyCard && (

@@ -173,6 +173,26 @@ export function ControlPanel({
             </div>
           )}
 
+          {/* Problem Focus - available in both modes */}
+          {onSetFocus && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Session Focus
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onSetFocus}
+                  className="justify-start font-mono text-xs uppercase tracking-wider w-full"
+                >
+                  Set Problem Focus
+                </Button>
+              </div>
+            </>
+          )}
+
           {mode === 'collaborative' && (
             <>
               <Separator />
@@ -192,16 +212,6 @@ export function ControlPanel({
                       )}
                     >
                       {isModeratorMode ? 'Moderator Mode On' : 'Enable Moderator Mode'}
-                    </Button>
-                  )}
-                  {isModeratorMode && onSetFocus && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onSetFocus}
-                      className="justify-start font-mono text-xs uppercase tracking-wider"
-                    >
-                      Set Problem Focus
                     </Button>
                   )}
                 </div>
