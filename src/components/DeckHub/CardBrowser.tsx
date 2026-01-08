@@ -84,8 +84,16 @@ export function CardBrowser({
   };
 
   const handleSaveEdit = () => {
-    if (editingId && editText.trim() && onEditWildcard) {
-      onEditWildcard(editingId, editText.trim());
+    if (editingId && editText.trim()) {
+      // For non-wildcards, create a new wildcard with the edited text
+      const editedCard = categoryCards.find(c => c.id === editingId);
+      if (editedCard && !editedCard.isWildcard && onEditWildcard) {
+        // Create as new wildcard
+        onAddWildcard(editText.trim(), selectedCategory);
+      } else if (onEditWildcard) {
+        // Update existing wildcard
+        onEditWildcard(editingId, editText.trim());
+      }
     }
     setEditingId(null);
     setEditText('');
@@ -234,16 +242,17 @@ export function CardBrowser({
                     <div className="flex items-center gap-1 shrink-0">
                       {getCardBadge(card)}
                       
-                      {/* Actions - always visible for wildcards */}
-                      {card.isWildcard && (
-                        <div className="flex gap-0.5 ml-1">
-                          <button
-                            onClick={() => handleStartEdit(card)}
-                            className="p-1 hover:bg-muted rounded transition-colors"
-                            title="Edit card"
-                          >
-                            <Edit2 className="w-3 h-3 text-muted-foreground hover:text-foreground" />
-                          </button>
+                      {/* Edit action - available for all cards */}
+                      <div className="flex gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleStartEdit(card)}
+                          className="p-1 hover:bg-muted rounded transition-colors"
+                          title="Edit card"
+                        >
+                          <Edit2 className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                        </button>
+                        {/* Delete only for wildcards */}
+                        {card.isWildcard && (
                           <button
                             onClick={() => onRemoveWildcard(card.id)}
                             className="p-1 hover:bg-destructive/10 rounded transition-colors"
@@ -251,8 +260,8 @@ export function CardBrowser({
                           >
                             <Trash2 className="w-3 h-3 text-destructive/70 hover:text-destructive" />
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
