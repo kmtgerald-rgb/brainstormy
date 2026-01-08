@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Pencil } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,8 @@ interface ShuffleAreaProps {
   suggestion?: { title: string; description: string } | null;
   onClearSuggestion: () => void;
   onAddSuggestionToIdeas?: () => void;
+  problemStatement?: string | null;
+  onEditProblem?: () => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -31,6 +33,8 @@ export function ShuffleArea({
   suggestion,
   onClearSuggestion,
   onAddSuggestionToIdeas,
+  problemStatement,
+  onEditProblem,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   
@@ -49,23 +53,51 @@ export function ShuffleArea({
   };
 
   return (
-    <div className="text-center space-y-8 min-h-[50vh] flex flex-col justify-center">
-      {/* Hero text - only show when no cards */}
-      <AnimatePresence>
-        {!hasAnyCard && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-2"
-          >
-            <h2 className="font-serif text-4xl md:text-5xl">Draw the unexpected.</h2>
-            <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
-              Four forces. One idea.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="text-center space-y-8">
+      {/* Hero text + Problem Focus */}
+      <div className="space-y-4">
+        <AnimatePresence>
+          {!hasAnyCard && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-2"
+            >
+              <h2 className="font-serif text-4xl md:text-5xl">Draw the unexpected.</h2>
+              <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
+                Four forces. One idea.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Inline Problem Focus */}
+        <motion.button
+          onClick={onEditProblem}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all',
+            'font-mono text-xs uppercase tracking-wider',
+            problemStatement 
+              ? 'bg-foreground/5 text-foreground hover:bg-foreground/10 border border-border/50' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          )}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {problemStatement ? (
+            <>
+              <span className="max-w-md truncate">{problemStatement}</span>
+              <Pencil className="w-3 h-3 flex-shrink-0 opacity-60" />
+            </>
+          ) : (
+            <>
+              <span>Free Brainstorm</span>
+              <span className="text-muted-foreground/60">· Click to set focus</span>
+            </>
+          )}
+        </motion.button>
+      </div>
 
       {/* Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">

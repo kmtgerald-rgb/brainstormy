@@ -52,6 +52,7 @@ export function HowItWorks() {
                   Basic Flow
                 </h4>
                 <ol className="text-muted-foreground text-xs leading-relaxed space-y-1 list-decimal list-inside">
+                  <li>Set your <strong>focus</strong> (or go free-form)</li>
                   <li>Hit <strong>Shuffle</strong> to draw four random cards</li>
                   <li>Find a connection — don't judge yet, just combine</li>
                   <li>Hit <strong>TWIST</strong> to capture your idea</li>
