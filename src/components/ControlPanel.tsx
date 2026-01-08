@@ -10,14 +10,10 @@ import {
 import { ModeToggle } from './ModeToggle';
 import { GameModeSelector } from './GameModeSelector';
 import { SessionPanel } from './SessionPanel';
-import { DeckConfigSection } from './DeckConfigSection';
-import { CardManagementPanel } from './CardManagementPanel';
 import { HowItWorks } from './HowItWorks';
 import { Session } from '@/hooks/useSession';
 import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
-import { DeckConfig, InsightVariant, TechVariant } from '@/data/deckVariants';
-import { Card } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -41,15 +37,6 @@ interface ControlPanelProps {
   isGameRunning?: boolean;
   onGameModeChange?: (mode: GameMode) => void;
   onGameSettingsChange?: (settings: Partial<GameSettings>) => void;
-  // Deck configuration props
-  deckConfig?: DeckConfig;
-  isDeckGenerating?: boolean;
-  onInsightVariantChange?: (variant: InsightVariant, context?: string) => void;
-  onTechVariantChange?: (variant: TechVariant) => void;
-  onGenerateDeck?: (type: 'industry' | 'region', context: string, forceRegenerate?: boolean) => Promise<void>;
-  hasGeneratedDeck?: (type: 'industry' | 'region', context: string) => boolean;
-  generatedInsightCards?: Card[];
-  onEditCard?: (card: Card) => void;
 }
 
 export function ControlPanel({
@@ -67,15 +54,6 @@ export function ControlPanel({
   onToggleModeratorMode,
   onSetFocus,
   gameMode = 'freejam',
-  // Deck configuration
-  deckConfig,
-  isDeckGenerating = false,
-  onInsightVariantChange,
-  onTechVariantChange,
-  onGenerateDeck,
-  hasGeneratedDeck,
-  generatedInsightCards,
-  onEditCard,
   gameSettings = { duration: 300, targetCount: 10 },
   availableGameModes = ['freejam', 'time-attack', 'target'],
   isGameRunning = false,
@@ -131,27 +109,6 @@ export function ControlPanel({
             </div>
           )}
 
-          {/* Deck Configuration */}
-          {deckConfig && onInsightVariantChange && onTechVariantChange && onGenerateDeck && hasGeneratedDeck && (
-            <>
-              <Separator />
-              <DeckConfigSection
-                deckConfig={deckConfig}
-                isGenerating={isDeckGenerating}
-                onInsightVariantChange={onInsightVariantChange}
-                onTechVariantChange={onTechVariantChange}
-                onGenerateDeck={onGenerateDeck}
-                hasGeneratedDeck={hasGeneratedDeck}
-              />
-              <CardManagementPanel
-                deckConfig={deckConfig}
-                generatedInsightCards={generatedInsightCards}
-                onEditCard={onEditCard}
-                onRegenerateDeck={onGenerateDeck}
-                isGenerating={isDeckGenerating}
-              />
-            </>
-          )}
           {mode === 'collaborative' && (
             <>
               <Separator />

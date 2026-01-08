@@ -16,15 +16,14 @@ import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
 import { CompetitionEndModal } from '@/components/CompetitionEndModal';
 import { IdeasTray } from '@/components/IdeasTray';
-import { useCards, FilterMode } from '@/hooks/useCards';
-import { useDeckConfig } from '@/hooks/useDeckConfig';
+import { DeckHub } from '@/components/DeckHub';
+import { useDeckManager } from '@/hooks/useDeckManager';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
 import { useCollaborativeGameMode } from '@/hooks/useCollaborativeGameMode';
 import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
-import { contentFormatCards, channelCards } from '@/data/deckVariants';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -37,36 +36,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { FilterMode } from '@/hooks/useCards';
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
 const STORAGE_KEY = 'mashup-preferred-mode';
+const SAVED_IDEAS_KEY = 'mashup-saved-ideas';
+
+interface SavedIdea {
+  id: string;
+  title: string;
+  description: string;
+  cards: Card[];
+  author?: string;
+  createdAt: Date;
+  isAIGenerated?: boolean;
+}
 
 const Index = () => {
-  const {
-    getCardsByCategory,
-    addWildcard: addLocalWildcard,
-    removeWildcard: removeLocalWildcard,
-    selectedCards,
-    setSelectedCards,
-    clearSelection,
-    saveIdea: saveLocalIdea,
-    savedIdeas: localSavedIdeas,
-    deleteIdea: deleteLocalIdea,
-    wildcards: localWildcards,
-  } = useCards();
-
-  const {
-    deckConfig,
-    isGenerating: isDeckGenerating,
-    setInsightVariant,
-    setTechVariant,
-    generateDeck,
-    getTechVariantCards,
-    getInsightVariantCards,
-    findGeneratedDeck,
-    getGeneratedDeckKey,
-  } = useDeckConfig();
+  // Use the new unified deck manager
+  const deckManager = useDeckManager();
 
   const {
     session,
@@ -136,6 +125,26 @@ const Index = () => {
     setPendingModeChange(null);
   };
 
+  // Local saved ideas state
+  const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>(() => {
+    const stored = localStorage.getItem(SAVED_IDEAS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.map((idea: SavedIdea) => ({
+        ...idea,
+        createdAt: new Date(idea.createdAt),
+      }));
+    }
+    return [];
+  });
+
+  const [selectedCards, setSelectedCards] = useState<Record<Category, Card | null>>({
+    insight: null,
+    asset: null,
+    tech: null,
+    random: null,
+  });
+
   const [categoryFilters, setCategoryFilters] = useState<Record<Category, FilterMode>>({
     insight: 'all',
     asset: 'all',
@@ -175,12 +184,15 @@ const Index = () => {
     [getCardText]
   );
 
-  // Combine default cards with session wildcards when in a session
+  // Get cards for category (includes session wildcards when in session)
   const getCardsForCategory = useCallback(
-    (category: Category, filter: FilterMode): Card[] => {
-      const baseCards = getCardsByCategory(category, filter);
+    (category: Category, filter: FilterMode = 'all'): Card[] => {
+      const baseCards = deckManager.getCardsForCategory(category);
+      const categoryWildcards = deckManager.wildcards.filter(w => w.category === category);
 
-      if (session && filter !== 'default') {
+      let cards = [...baseCards, ...categoryWildcards];
+
+      if (session) {
         const sessionCards = sessionWildcards
           .filter((w) => w.category === category)
           .map((w) => ({
@@ -189,16 +201,18 @@ const Index = () => {
             category: w.category,
             isWildcard: true,
           }));
-
-        if (filter === 'wildcards') {
-          return applyOverrides([...baseCards.filter((c) => c.isWildcard), ...sessionCards]);
-        }
-        return applyOverrides([...baseCards, ...sessionCards]);
+        cards = [...cards, ...sessionCards];
       }
 
-      return applyOverrides(baseCards);
+      if (filter === 'default') {
+        cards = cards.filter(c => !c.isWildcard && !c.isGenerated);
+      } else if (filter === 'wildcards') {
+        cards = cards.filter(c => c.isWildcard);
+      }
+
+      return applyOverrides(cards);
     },
-    [getCardsByCategory, session, sessionWildcards, applyOverrides]
+    [deckManager, session, sessionWildcards, applyOverrides]
   );
 
   // Get cards for library with modified-only filter
@@ -215,49 +229,24 @@ const Index = () => {
     [getCardsForCategory, showModifiedOnly, isModeratorMode, hasOverride]
   );
 
-  // All cards for shuffling with overrides applied and deck variants
+  // All cards for shuffling with overrides applied
   const allCardsForShuffle = useMemo(() => {
-    // Get base insight cards (either generated or default)
-    const insightVariantCards = getInsightVariantCards();
-    const insightCards = insightVariantCards || defaultCards.filter(c => c.category === 'insight');
-    
-    // Get tech variant cards (format, channel, or default)
-    const techVariantCards = getTechVariantCards();
-    const techCards = techVariantCards || defaultCards.filter(c => c.category === 'tech');
-    
-    // Get other category cards (asset, random)
-    const otherCards = defaultCards.filter(c => c.category === 'asset' || c.category === 'random');
-    
-    // Combine all cards
-    const baseCards = [...insightCards, ...techCards, ...otherCards, ...localWildcards];
-    
-    // Apply overrides
-    const withOverrides = baseCards.map((card) => ({
-      ...card,
-      text: getCardText(card.id, card.text),
-    }));
-    
-    if (session) {
-      const sessionCards = sessionWildcards.map((w) => ({
-        id: w.id,
-        text: w.text,
-        category: w.category,
-        isWildcard: true,
-      }));
-      return [...withOverrides, ...sessionCards];
-    }
-    return withOverrides;
-  }, [localWildcards, session, sessionWildcards, getCardText, getInsightVariantCards, getTechVariantCards]);
+    const cards: Card[] = [];
+    categories.forEach(cat => {
+      cards.push(...getCardsForCategory(cat, 'all'));
+    });
+    return cards;
+  }, [getCardsForCategory]);
 
   // Find original text for a card
   const getOriginalText = useCallback(
     (cardId: string): string | undefined => {
       const defaultCard = defaultCards.find((c) => c.id === cardId);
       if (defaultCard) return defaultCard.text;
-      const wildcardCard = localWildcards.find((c) => c.id === cardId);
+      const wildcardCard = deckManager.wildcards.find((c) => c.id === cardId);
       return wildcardCard?.text;
     },
-    [localWildcards]
+    [deckManager.wildcards]
   );
 
   const handleEditCard = (card: Card) => {
@@ -280,7 +269,7 @@ const Index = () => {
     if (session) {
       await addSessionWildcard(text, category);
     } else {
-      addLocalWildcard(text, category);
+      deckManager.addWildcard(text, category);
     }
   };
 
@@ -288,7 +277,7 @@ const Index = () => {
     if (session && sessionWildcards.some((w) => w.id === id)) {
       await deleteSessionWildcard(id);
     } else {
-      removeLocalWildcard(id);
+      deckManager.removeWildcard(id);
     }
   };
 
@@ -320,7 +309,12 @@ const Index = () => {
 
   const handleClear = () => {
     clearSuggestion();
-    clearSelection();
+    setSelectedCards({
+      insight: null,
+      asset: null,
+      tech: null,
+      random: null,
+    });
   };
 
   const handleGetSuggestion = () => {
@@ -330,6 +324,37 @@ const Index = () => {
   // Derive card states
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
+
+  const saveLocalIdea = useCallback((title: string, description: string, author?: string, isAIGenerated?: boolean) => {
+    const cards = Object.values(selectedCards).filter((c): c is Card => c !== null);
+    if (cards.length !== 4) return null;
+
+    const newIdea: SavedIdea = {
+      id: `idea-${Date.now()}`,
+      title,
+      description,
+      cards,
+      author,
+      createdAt: new Date(),
+      isAIGenerated: isAIGenerated || false,
+    };
+
+    setSavedIdeas((prev) => {
+      const updated = [newIdea, ...prev];
+      localStorage.setItem(SAVED_IDEAS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+    return newIdea;
+  }, [selectedCards]);
+
+  const deleteLocalIdea = useCallback((id: string) => {
+    setSavedIdeas((prev) => {
+      const updated = prev.filter((idea) => idea.id !== id);
+      localStorage.setItem(SAVED_IDEAS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const handleSaveIdea = async (title: string, description: string, author?: string, isAIGenerated?: boolean) => {
     if (author && author !== participantName) {
@@ -352,7 +377,7 @@ const Index = () => {
       saveLocalIdea(title, description, author, isAIGenerated);
     }
     gameMode.incrementIdeas();
-    clearSuggestion(); // Clear AI suggestion after saving
+    clearSuggestion();
   };
 
   const handleDeleteIdea = async (id: string) => {
@@ -363,7 +388,7 @@ const Index = () => {
     }
   };
 
-  const displayedIdeas = session ? sessionIdeas : localSavedIdeas;
+  const displayedIdeas = session ? sessionIdeas : savedIdeas;
 
   const handlePlayAgain = () => {
     gameMode.resetGame();
@@ -402,12 +427,6 @@ const Index = () => {
         isGameRunning={session ? collabGame.isRunning : gameMode.isRunning}
         onGameModeChange={session ? collabGame.updateGameMode : gameMode.changeMode}
         onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
-        deckConfig={deckConfig}
-        isDeckGenerating={isDeckGenerating}
-        onInsightVariantChange={setInsightVariant}
-        onTechVariantChange={setTechVariant}
-        onGenerateDeck={async (type, context, force) => { await generateDeck(type, context, force); }}
-        hasGeneratedDeck={(type, context) => !!findGeneratedDeck(getGeneratedDeckKey(type, context))}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
@@ -486,8 +505,28 @@ const Index = () => {
           />
         </motion.section>
 
-        {/* Browse Library - smaller, more subtle */}
-        <div className="flex justify-center pt-8">
+        {/* Deck Hub + Browse Library */}
+        <div className="flex justify-center gap-4 pt-8">
+          <DeckHub
+            presets={deckManager.presets}
+            activePreset={deckManager.activePreset}
+            wildcards={deckManager.wildcards}
+            isGenerating={deckManager.isGenerating}
+            onActivatePreset={deckManager.activatePreset}
+            onCreatePreset={(name) => deckManager.createPreset(name, deckManager.activePreset.config)}
+            onDuplicatePreset={deckManager.duplicatePreset}
+            onDeletePreset={deckManager.deletePreset}
+            onInsightChange={deckManager.setInsightVariant}
+            onCatalystChange={deckManager.setCatalystVariant}
+            onGenerate={deckManager.generateCards}
+            onAddWildcard={handleAddWildcard}
+            onRemoveWildcard={handleRemoveWildcard}
+            onEditWildcard={deckManager.updateWildcard}
+            getCardsForCategory={deckManager.getCardsForCategory}
+            onExport={deckManager.exportPresets}
+            onImport={deckManager.importPresets}
+          />
+
           <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <SheetTrigger asChild>
               <Button 
