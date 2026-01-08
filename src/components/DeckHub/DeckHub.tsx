@@ -1,22 +1,25 @@
 import { useState } from 'react';
-import { Settings, Layers, FileJson, Upload, Download } from 'lucide-react';
+import { Layers, Upload, Download, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { PresetSwitcher } from './PresetSwitcher';
 import { DeckConfigurator } from './DeckConfigurator';
 import { CardBrowser } from './CardBrowser';
 import { DeckPreset } from '@/hooks/useDeckManager';
 import { Card, Category } from '@/data/defaultCards';
 import { InsightVariant, TechVariant } from '@/data/deckVariants';
-import { cn } from '@/lib/utils';
 
 interface DeckHubProps {
   // State
@@ -44,9 +47,10 @@ interface DeckHubProps {
   // Card getter
   getCardsForCategory: (category: Category) => Card[];
   
-  // Export/Import
+  // Export/Import/Reset
   onExport: () => string;
   onImport: (json: string) => void;
+  onReset: () => void;
 }
 
 export function DeckHub({
@@ -67,6 +71,7 @@ export function DeckHub({
   getCardsForCategory,
   onExport,
   onImport,
+  onReset,
 }: DeckHubProps) {
   const [activeTab, setActiveTab] = useState('presets');
 
@@ -100,122 +105,143 @@ export function DeckHub({
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="gap-2 font-mono text-[10px] uppercase tracking-wider"
-        >
-          <Layers className="w-3.5 h-3.5" />
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Layers className="w-4 h-4 text-muted-foreground" />
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
           Deck Hub
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-80 sm:w-96">
-        <SheetHeader className="text-left">
-          <SheetTitle className="font-serif text-xl flex items-center gap-2">
-            <Layers className="w-5 h-5" />
-            Deck Hub
-          </SheetTitle>
-        </SheetHeader>
+        </span>
+      </div>
 
-        <div className="mt-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger 
-                value="presets"
-                className="font-mono text-[10px] uppercase tracking-wider"
-              >
-                Presets
-              </TabsTrigger>
-              <TabsTrigger 
-                value="configure"
-                className="font-mono text-[10px] uppercase tracking-wider"
-              >
-                Configure
-              </TabsTrigger>
-              <TabsTrigger 
-                value="cards"
-                className="font-mono text-[10px] uppercase tracking-wider"
-              >
-                Cards
-              </TabsTrigger>
-            </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger 
+            value="presets"
+            className="font-mono text-[10px] uppercase tracking-wider"
+          >
+            Presets
+          </TabsTrigger>
+          <TabsTrigger 
+            value="configure"
+            className="font-mono text-[10px] uppercase tracking-wider"
+          >
+            Configure
+          </TabsTrigger>
+          <TabsTrigger 
+            value="cards"
+            className="font-mono text-[10px] uppercase tracking-wider"
+          >
+            Cards
+          </TabsTrigger>
+        </TabsList>
 
-            <div className="mt-6">
-              <TabsContent value="presets" className="mt-0 space-y-4">
-                <p className="text-xs text-muted-foreground">
-                  Switch between saved deck configurations
-                </p>
-                <PresetSwitcher
-                  presets={presets}
-                  activePresetId={activePreset.id}
-                  onActivate={onActivatePreset}
-                  onDuplicate={onDuplicatePreset}
-                  onDelete={onDeletePreset}
-                  onCreate={(name) => onCreatePreset(name)}
-                />
-                
-                <Separator className="my-4" />
-                
-                {/* Import/Export */}
-                <div className="space-y-2">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Backup & Restore
-                  </label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleExport}
-                      className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
-                    >
-                      <Download className="w-3 h-3" />
-                      Export
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleImport}
-                      className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
-                    >
-                      <Upload className="w-3 h-3" />
-                      Import
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="configure" className="mt-0">
-                <p className="text-xs text-muted-foreground mb-4">
-                  Customize the active preset: <strong>{activePreset.name}</strong>
-                </p>
-                <DeckConfigurator
-                  activePreset={activePreset}
-                  isGenerating={isGenerating}
-                  onInsightChange={onInsightChange}
-                  onCatalystChange={onCatalystChange}
-                  onGenerate={onGenerate}
-                />
-              </TabsContent>
-
-              <TabsContent value="cards" className="mt-0">
-                <p className="text-xs text-muted-foreground mb-4">
-                  Browse and manage cards in your deck
-                </p>
-                <CardBrowser
-                  activePreset={activePreset}
-                  wildcards={wildcards}
-                  getCardsForCategory={getCardsForCategory}
-                  onAddWildcard={onAddWildcard}
-                  onRemoveWildcard={onRemoveWildcard}
-                  onEditWildcard={onEditWildcard}
-                />
-              </TabsContent>
+        <div className="mt-4">
+          <TabsContent value="presets" className="mt-0 space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Switch between saved deck configurations
+            </p>
+            <PresetSwitcher
+              presets={presets}
+              activePresetId={activePreset.id}
+              onActivate={onActivatePreset}
+              onDuplicate={onDuplicatePreset}
+              onDelete={onDeletePreset}
+              onCreate={(name) => onCreatePreset(name)}
+            />
+            
+            <Separator className="my-4" />
+            
+            {/* Import/Export */}
+            <div className="space-y-2">
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Backup & Restore
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
+                >
+                  <Download className="w-3 h-3" />
+                  Export
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImport}
+                  className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
+                >
+                  <Upload className="w-3 h-3" />
+                  Import
+                </Button>
+              </div>
             </div>
-          </Tabs>
+            
+            <Separator className="my-4" />
+            
+            {/* Reset */}
+            <div className="space-y-2">
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Reset
+              </label>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 font-mono text-[10px] uppercase tracking-wider text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset All to Defaults
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset all deck settings?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all custom presets, wildcards, and AI-generated cards. Default presets will be restored. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReset} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Reset All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="configure" className="mt-0">
+            <p className="text-xs text-muted-foreground mb-4">
+              Customize: <strong>{activePreset.name}</strong>
+            </p>
+            <DeckConfigurator
+              activePreset={activePreset}
+              isGenerating={isGenerating}
+              onInsightChange={onInsightChange}
+              onCatalystChange={onCatalystChange}
+              onGenerate={onGenerate}
+            />
+          </TabsContent>
+
+          <TabsContent value="cards" className="mt-0">
+            <p className="text-xs text-muted-foreground mb-4">
+              Browse and manage cards
+            </p>
+            <CardBrowser
+              activePreset={activePreset}
+              wildcards={wildcards}
+              getCardsForCategory={getCardsForCategory}
+              onAddWildcard={onAddWildcard}
+              onRemoveWildcard={onRemoveWildcard}
+              onEditWildcard={onEditWildcard}
+            />
+          </TabsContent>
         </div>
-      </SheetContent>
-    </Sheet>
+      </Tabs>
+    </div>
   );
 }

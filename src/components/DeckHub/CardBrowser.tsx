@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
-import { Edit2, Trash2, Plus, Sparkles, Star } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Edit2, Trash2, Plus, Sparkles, Star, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { DeckPreset } from '@/hooks/useDeckManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -39,9 +40,18 @@ export function CardBrowser({
   const [newCardText, setNewCardText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
   
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
+
   // Get cards for selected category
   const categoryCards = useMemo(() => {
     const baseCards = getCardsForCategory(selectedCategory);
@@ -79,6 +89,20 @@ export function CardBrowser({
     }
     setEditingId(null);
     setEditText('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   const getCardBadge = (card: Card) => {
@@ -167,42 +191,67 @@ export function CardBrowser({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 className={cn(
-                  'flex items-center gap-2 p-2 bg-background border-l-2 rounded-sm',
+                  'flex items-start gap-2 p-2 bg-background border-l-2 rounded-sm',
                   'text-xs hover:bg-muted/50 transition-colors group',
-                  categoryColors[card.category]
+                  categoryColors[card.category],
+                  editingId === card.id && 'bg-muted/50 ring-1 ring-primary/20'
                 )}
               >
                 {editingId === card.id ? (
-                  <Input
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    onBlur={handleSaveEdit}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                    autoFocus
-                    className="h-6 text-xs flex-1"
-                  />
+                  <div className="flex-1 space-y-2">
+                    <Textarea
+                      ref={editInputRef}
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="min-h-[60px] text-xs resize-none"
+                      placeholder="Card text..."
+                    />
+                    <div className="flex gap-1 justify-end">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancelEdit}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveEdit}
+                        disabled={!editText.trim()}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    <span className="flex-1 truncate">{card.text}</span>
-                    {getCardBadge(card)}
-                    
-                    {/* Actions */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="flex-1 leading-relaxed">{card.text}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {getCardBadge(card)}
+                      
+                      {/* Actions - always visible for wildcards */}
                       {card.isWildcard && (
-                        <>
+                        <div className="flex gap-0.5 ml-1">
                           <button
                             onClick={() => handleStartEdit(card)}
-                            className="p-1 hover:bg-muted rounded"
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Edit card"
                           >
-                            <Edit2 className="w-3 h-3 text-muted-foreground" />
+                            <Edit2 className="w-3 h-3 text-muted-foreground hover:text-foreground" />
                           </button>
                           <button
                             onClick={() => onRemoveWildcard(card.id)}
-                            className="p-1 hover:bg-destructive/10 rounded"
+                            className="p-1 hover:bg-destructive/10 rounded transition-colors"
+                            title="Delete card"
                           >
-                            <Trash2 className="w-3 h-3 text-destructive" />
+                            <Trash2 className="w-3 h-3 text-destructive/70 hover:text-destructive" />
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </>

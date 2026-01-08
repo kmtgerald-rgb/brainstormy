@@ -387,6 +387,18 @@ export function useDeckManager() {
     }
   }, [persistState]);
 
+  // Reset everything to defaults
+  const resetAll = useCallback(() => {
+    const defaultState: DeckManagerState = {
+      activePresetId: 'preset-general',
+      presets: createDefaultPresets(),
+      wildcards: [],
+    };
+    setState(defaultState);
+    persistState(defaultState);
+    toast.success('Reset to defaults');
+  }, [persistState]);
+
   return {
     // State
     presets: state.presets,
@@ -419,5 +431,8 @@ export function useDeckManager() {
     // Export/Import
     exportPresets,
     importPresets,
+    
+    // Reset
+    resetAll,
   };
 }

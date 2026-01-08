@@ -16,7 +16,6 @@ import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
 import { CompetitionEndModal } from '@/components/CompetitionEndModal';
 import { IdeasTray } from '@/components/IdeasTray';
-import { DeckHub } from '@/components/DeckHub';
 import { useDeckManager } from '@/hooks/useDeckManager';
 import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
@@ -427,6 +426,25 @@ const Index = () => {
         isGameRunning={session ? collabGame.isRunning : gameMode.isRunning}
         onGameModeChange={session ? collabGame.updateGameMode : gameMode.changeMode}
         onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
+        // Deck Hub props
+        deckPresets={deckManager.presets}
+        activeDeckPreset={deckManager.activePreset}
+        deckWildcards={deckManager.wildcards}
+        isDeckGenerating={deckManager.isGenerating}
+        onActivateDeckPreset={deckManager.activatePreset}
+        onCreateDeckPreset={(name) => deckManager.createPreset(name, deckManager.activePreset.config)}
+        onDuplicateDeckPreset={deckManager.duplicatePreset}
+        onDeleteDeckPreset={deckManager.deletePreset}
+        onInsightChange={deckManager.setInsightVariant}
+        onCatalystChange={deckManager.setCatalystVariant}
+        onGenerateDeck={deckManager.generateCards}
+        onAddWildcard={handleAddWildcard}
+        onRemoveWildcard={handleRemoveWildcard}
+        onEditWildcard={deckManager.updateWildcard}
+        getCardsForCategory={deckManager.getCardsForCategory}
+        onExportPresets={deckManager.exportPresets}
+        onImportPresets={deckManager.importPresets}
+        onResetDeck={deckManager.resetAll}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
@@ -505,28 +523,8 @@ const Index = () => {
           />
         </motion.section>
 
-        {/* Deck Hub + Browse Library */}
-        <div className="flex justify-center gap-4 pt-8">
-          <DeckHub
-            presets={deckManager.presets}
-            activePreset={deckManager.activePreset}
-            wildcards={deckManager.wildcards}
-            isGenerating={deckManager.isGenerating}
-            onActivatePreset={deckManager.activatePreset}
-            onCreatePreset={(name) => deckManager.createPreset(name, deckManager.activePreset.config)}
-            onDuplicatePreset={deckManager.duplicatePreset}
-            onDeletePreset={deckManager.deletePreset}
-            onInsightChange={deckManager.setInsightVariant}
-            onCatalystChange={deckManager.setCatalystVariant}
-            onGenerate={deckManager.generateCards}
-            onAddWildcard={handleAddWildcard}
-            onRemoveWildcard={handleRemoveWildcard}
-            onEditWildcard={deckManager.updateWildcard}
-            getCardsForCategory={deckManager.getCardsForCategory}
-            onExport={deckManager.exportPresets}
-            onImport={deckManager.importPresets}
-          />
-
+        {/* Browse Library */}
+        <div className="flex justify-center pt-8">
           <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <SheetTrigger asChild>
               <Button 
