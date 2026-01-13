@@ -55,7 +55,8 @@ export function HowItWorks() {
                   <li>Set your <strong>focus</strong> (or go free-form)</li>
                   <li>Hit <strong>Shuffle</strong> to draw four random cards</li>
                   <li>Find a connection — don't judge yet, just combine</li>
-                  <li>Hit <strong>TWIST</strong> to capture your idea</li>
+                  <li>Name and describe your idea inline, or let <strong>AI Fill</strong></li>
+                  <li>Hit <strong>Capture</strong> to save your spark</li>
                   <li>Repeat until you've exhausted the unexpected</li>
                 </ol>
               </div>

@@ -1,29 +1,21 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Lightbulb, Wand2, X, Loader2 } from 'lucide-react';
+import { Shuffle, RotateCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface FloatingActionBarProps {
   hasAnyCard: boolean;
-  hasAllCards: boolean;
   isShuffling: boolean;
-  isAILoading: boolean;
   canPlay: boolean;
   onShuffle: () => void;
-  onTwist: () => void;
-  onAISuggest: () => void;
   onClear: () => void;
 }
 
 export function FloatingActionBar({
   hasAnyCard,
-  hasAllCards,
   isShuffling,
-  isAILoading,
   canPlay,
   onShuffle,
-  onTwist,
-  onAISuggest,
   onClear,
 }: FloatingActionBarProps) {
   return (
@@ -63,7 +55,7 @@ export function FloatingActionBar({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center gap-2 w-full"
+                className="flex items-center gap-2"
               >
                 {/* Reshuffle */}
                 <Button
@@ -71,50 +63,21 @@ export function FloatingActionBar({
                   size="lg"
                   onClick={onShuffle}
                   disabled={isShuffling || !canPlay}
-                  className="gap-2 font-mono text-xs uppercase tracking-wider flex-shrink-0"
+                  className="gap-2 font-mono text-xs uppercase tracking-wider"
                 >
-                  <Shuffle className={cn('w-4 h-4', isShuffling && 'animate-spin')} />
+                  <RotateCcw className={cn('w-4 h-4', isShuffling && 'animate-spin')} />
                   <span className="hidden sm:inline">Reshuffle</span>
                 </Button>
-
-                {/* TWIST - Primary action when all cards are drawn */}
-                {hasAllCards && (
-                  <Button
-                    size="lg"
-                    onClick={onTwist}
-                    className="gap-2 flex-1 py-6 font-mono uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90"
-                  >
-                    <Lightbulb className="w-5 h-5" />
-                    TWIST
-                  </Button>
-                )}
-
-                {/* AI Suggest */}
-                {hasAllCards && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={onAISuggest}
-                    disabled={isAILoading}
-                    className="gap-2 font-mono text-xs uppercase tracking-wider flex-shrink-0"
-                  >
-                    {isAILoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-4 h-4" />
-                    )}
-                    <span className="hidden sm:inline">AI</span>
-                  </Button>
-                )}
 
                 {/* Clear */}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onClear}
-                  className="flex-shrink-0 text-muted-foreground"
+                  disabled={isShuffling}
+                  className="text-muted-foreground hover:text-destructive"
                 >
-                  <X className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </motion.div>
             )}
