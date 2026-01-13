@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { MashupCard } from './MashupCard';
+import { InlineIdeaCapture } from './InlineIdeaCapture';
 import { cn } from '@/lib/utils';
 import { useCardExplanation } from '@/hooks/useCardExplanation';
 
@@ -10,11 +11,15 @@ interface ShuffleAreaProps {
   selectedCards: Record<Category, Card | null>;
   shuffleKey: number;
   isShuffling: boolean;
-  suggestion?: { title: string; description: string } | null;
-  onClearSuggestion: () => void;
-  onAddSuggestionToIdeas?: () => void;
   problemStatement?: string | null;
   onEditProblem?: () => void;
+  // Inline idea capture props
+  onSaveIdea?: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
+  onAISuggest?: () => void;
+  aiSuggestion?: { title: string; description: string } | null;
+  isAILoading?: boolean;
+  isCollaborative?: boolean;
+  participantName?: string;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -30,13 +35,17 @@ export function ShuffleArea({
   selectedCards, 
   shuffleKey,
   isShuffling,
-  suggestion,
-  onClearSuggestion,
-  onAddSuggestionToIdeas,
   problemStatement,
   onEditProblem,
+  onSaveIdea,
+  onAISuggest,
+  aiSuggestion,
+  isAILoading = false,
+  isCollaborative = false,
+  participantName,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
+  const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
   
   const { getExplanation, getState, prefetchExplanations } = useCardExplanation();
 
@@ -137,43 +146,18 @@ export function ShuffleArea({
         </AnimatePresence>
       </div>
 
-      {/* AI Suggestion Display */}
-      <AnimatePresence>
-        {suggestion && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="relative mx-auto max-w-2xl p-6 bg-card border border-border card-shadow"
-          >
-            <button
-              onClick={onClearSuggestion}
-              className="absolute top-4 right-4 p-1 rounded hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-            <div className="space-y-3 text-left">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                AI Suggestion
-              </span>
-              <h3 className="font-serif text-2xl">
-                {suggestion.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {suggestion.description}
-              </p>
-              {onAddSuggestionToIdeas && (
-                <button
-                  onClick={onAddSuggestionToIdeas}
-                  className="mt-2 font-mono text-xs uppercase tracking-wider text-foreground/70 hover:text-foreground underline underline-offset-4 transition-colors"
-                >
-                  + Add to Ideas
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Inline Idea Capture */}
+      {onSaveIdea && onAISuggest && (
+        <InlineIdeaCapture
+          isVisible={hasAllCards && !isShuffling}
+          onSave={onSaveIdea}
+          onAISuggest={onAISuggest}
+          suggestion={aiSuggestion}
+          isAILoading={isAILoading}
+          isCollaborative={isCollaborative}
+          participantName={participantName}
+        />
+      )}
     </div>
   );
 }

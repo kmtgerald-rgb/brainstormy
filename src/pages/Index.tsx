@@ -5,7 +5,6 @@ import { CategorySection } from '@/components/CategorySection';
 import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
 import { ShuffleArea } from '@/components/ShuffleArea';
 import { FloatingActionBar } from '@/components/FloatingActionBar';
-import { IdeaDrawer } from '@/components/IdeaDrawer';
 import { IdeaBoard } from '@/components/IdeaBoard';
 import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
 import { EditCardDialog } from '@/components/EditCardDialog';
@@ -152,7 +151,6 @@ const Index = () => {
     random: 'all',
   });
 
-  const [isTwistOpen, setIsTwistOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
@@ -546,11 +544,14 @@ const Index = () => {
             selectedCards={selectedCards}
             shuffleKey={shuffleKey}
             isShuffling={isShuffling}
-            suggestion={suggestion}
-            onClearSuggestion={clearSuggestion}
-            onAddSuggestionToIdeas={handleAddSuggestionToIdeas}
             problemStatement={session?.problem_statement || localProblemStatement}
             onEditProblem={() => setIsFocusEditorOpen(true)}
+            onSaveIdea={handleSaveIdea}
+            onAISuggest={handleGetSuggestion}
+            aiSuggestion={suggestion}
+            isAILoading={isAILoading}
+            isCollaborative={!!session}
+            participantName={participantName}
           />
         </motion.section>
 
@@ -566,13 +567,9 @@ const Index = () => {
       {/* Floating Action Bar */}
       <FloatingActionBar
         hasAnyCard={hasAnyCard}
-        hasAllCards={hasAllCards}
         isShuffling={isShuffling}
-        isAILoading={isAILoading}
         canPlay={activeCanPlay}
         onShuffle={handleShuffle}
-        onTwist={() => setIsTwistOpen(true)}
-        onAISuggest={handleGetSuggestion}
         onClear={handleClear}
       />
 
@@ -584,16 +581,6 @@ const Index = () => {
           </p>
         </div>
       </footer>
-
-      <IdeaDrawer
-        isOpen={isTwistOpen}
-        onClose={() => setIsTwistOpen(false)}
-        selectedCards={selectedCards}
-        onSave={handleSaveIdea}
-        isCollaborative={!!session}
-        aiSuggestion={suggestion}
-        participantName={participantName}
-      />
 
       <EditCardDialog
         card={editingCard}
