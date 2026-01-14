@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface InlineIdeaCaptureProps {
   onSave: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
@@ -13,6 +13,8 @@ interface InlineIdeaCaptureProps {
   isCollaborative?: boolean;
   participantName?: string;
   isVisible: boolean;
+  autoAISuggest?: boolean;
+  onAutoAISuggestChange?: (enabled: boolean) => void;
 }
 
 export function InlineIdeaCapture({
@@ -23,6 +25,8 @@ export function InlineIdeaCapture({
   isCollaborative = false,
   participantName,
   isVisible,
+  autoAISuggest = false,
+  onAutoAISuggestChange,
 }: InlineIdeaCaptureProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -30,6 +34,15 @@ export function InlineIdeaCapture({
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUsingAI, setIsUsingAI] = useState(false);
   const [hasAppliedSuggestion, setHasAppliedSuggestion] = useState(false);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = "auto";
+      descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+    }
+  }, [description]);
 
   // Apply AI suggestion when it arrives
   useEffect(() => {
@@ -109,93 +122,122 @@ export function InlineIdeaCapture({
           className="w-full max-w-2xl mx-auto"
           onKeyDown={handleKeyDown}
         >
-          <div className="border border-border/50 rounded-lg bg-card/50 backdrop-blur-sm p-6 space-y-4">
-            {/* Header */}
+          <div className="bg-transparent p-6 space-y-6">
+            {/* Header with AI Toggle */}
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
                 Idea Canvas
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAIFill}
-                disabled={isAILoading}
-                className="text-xs gap-1.5 h-7 px-2"
-              >
-                {isAILoading ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Thinking...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3 h-3" />
-                    AI Fill
-                  </>
+              <div className="flex items-center gap-4">
+                {/* Auto AI Toggle */}
+                {onAutoAISuggestChange && (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="auto-ai"
+                      checked={autoAISuggest}
+                      onCheckedChange={onAutoAISuggestChange}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="auto-ai" className="text-xs text-muted-foreground cursor-pointer">
+                      Auto AI
+                    </Label>
+                  </div>
                 )}
-              </Button>
+                {/* Manual AI Fill button (hidden when auto is on) */}
+                {!autoAISuggest && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAIFill}
+                    disabled={isAILoading}
+                    className="text-xs gap-1.5 h-7 px-2"
+                  >
+                    {isAILoading ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Thinking...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3" />
+                        AI Fill
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {/* Form Fields */}
-            <div className="space-y-3">
+            {/* Form Fields - Underline Style */}
+            <div className="space-y-6">
               <motion.div
                 animate={isUsingAI && title ? { 
-                  boxShadow: ["0 0 0 0 hsl(var(--primary) / 0)", "0 0 0 3px hsl(var(--primary) / 0.2)", "0 0 0 0 hsl(var(--primary) / 0)"]
+                  opacity: [0.7, 1]
                 } : {}}
-                transition={{ duration: 0.6 }}
-                className="rounded-md"
+                transition={{ duration: 0.4 }}
               >
-                <Input
+                <input
+                  type="text"
                   placeholder="Name this combination..."
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
                     if (isUsingAI) setIsUsingAI(false);
                   }}
-                  className="bg-background/50 border-border/50 font-medium text-base placeholder:text-muted-foreground/50"
+                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 font-medium text-lg placeholder:text-muted-foreground/40 focus:outline-none transition-colors"
                 />
               </motion.div>
 
               <motion.div
                 animate={isUsingAI && description ? { 
-                  boxShadow: ["0 0 0 0 hsl(var(--primary) / 0)", "0 0 0 3px hsl(var(--primary) / 0.2)", "0 0 0 0 hsl(var(--primary) / 0)"]
+                  opacity: [0.7, 1]
                 } : {}}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="rounded-md"
+                transition={{ duration: 0.4, delay: 0.1 }}
               >
-                <Textarea
+                <textarea
+                  ref={descriptionRef}
                   placeholder="How do these forces connect?"
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value);
                     if (isUsingAI) setIsUsingAI(false);
                   }}
-                  rows={2}
-                  className="bg-background/50 border-border/50 text-sm resize-none placeholder:text-muted-foreground/50"
+                  rows={1}
+                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none transition-colors resize-none overflow-hidden min-h-[1.5rem]"
                 />
               </motion.div>
 
               {/* Author field for collaborative mode */}
               {isCollaborative && !participantName && (
-                <Input
+                <input
+                  type="text"
                   placeholder="Your name..."
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
-                  className="bg-background/50 border-border/50 text-sm placeholder:text-muted-foreground/50"
+                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none transition-colors"
                 />
               )}
             </div>
 
+            {/* AI Loading Indicator */}
+            {isAILoading && autoAISuggest && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="text-xs">Generating idea...</span>
+              </div>
+            )}
+
             {/* Capture Button */}
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end">
               <Button
                 onClick={handleCapture}
                 disabled={!title.trim()}
-                className="gap-2"
+                variant="ghost"
+                className="gap-2 text-sm"
               >
                 {isUsingAI && <Sparkles className="w-3.5 h-3.5" />}
                 Capture
-                <span className="text-xs text-primary-foreground/60 hidden sm:inline">⌘↵</span>
+                <span className="text-xs text-muted-foreground hidden sm:inline">⌘↵</span>
               </Button>
             </div>
           </div>

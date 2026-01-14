@@ -161,6 +161,9 @@ const Index = () => {
   
   // AI suggestion hook
   const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
+  const [autoAISuggest, setAutoAISuggest] = useState(() => {
+    return localStorage.getItem('brainstormy-auto-ai-suggest') === 'true';
+  });
   
   // Card Library state
   const [libraryViewMode, setLibraryViewMode] = useState<ViewMode>('grid');
@@ -278,7 +281,7 @@ const Index = () => {
     }
   };
 
-  const handleShuffle = () => {
+  const handleShuffle = useCallback(() => {
     setIsShuffling(true);
     clearSuggestion();
     
@@ -301,8 +304,20 @@ const Index = () => {
       setSelectedCards(newSelection);
       setShuffleKey((k) => k + 1);
       setIsShuffling(false);
+
+      // Auto-trigger AI suggestion if enabled
+      if (autoAISuggest) {
+        setTimeout(() => {
+          getSuggestion(newSelection, session?.problem_statement || localProblemStatement);
+        }, 400);
+      }
     }, 200);
-  };
+  }, [allCardsForShuffle, clearSuggestion, autoAISuggest, getSuggestion, session?.problem_statement, localProblemStatement]);
+
+  const handleAutoAISuggestChange = useCallback((enabled: boolean) => {
+    setAutoAISuggest(enabled);
+    localStorage.setItem('brainstormy-auto-ai-suggest', enabled ? 'true' : 'false');
+  }, []);
 
   const handleClear = () => {
     clearSuggestion();
@@ -552,6 +567,8 @@ const Index = () => {
             isAILoading={isAILoading}
             isCollaborative={!!session}
             participantName={participantName}
+            autoAISuggest={autoAISuggest}
+            onAutoAISuggestChange={handleAutoAISuggestChange}
           />
         </motion.section>
 
