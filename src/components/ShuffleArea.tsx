@@ -20,6 +20,8 @@ interface ShuffleAreaProps {
   isAILoading?: boolean;
   isCollaborative?: boolean;
   participantName?: string;
+  autoAISuggest?: boolean;
+  onAutoAISuggestChange?: (enabled: boolean) => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -43,6 +45,8 @@ export function ShuffleArea({
   isAILoading = false,
   isCollaborative = false,
   participantName,
+  autoAISuggest = false,
+  onAutoAISuggestChange,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -156,6 +160,8 @@ export function ShuffleArea({
           isAILoading={isAILoading}
           isCollaborative={isCollaborative}
           participantName={participantName}
+          autoAISuggest={autoAISuggest}
+          onAutoAISuggestChange={onAutoAISuggestChange}
         />
       )}
     </div>
