@@ -66,9 +66,9 @@ export function ShuffleArea({
   };
 
   return (
-    <div className="text-center space-y-8">
+    <div className="text-center space-y-4 md:space-y-6">
       {/* Hero text + Problem Focus */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <AnimatePresence>
           {!hasAnyCard && (
             <motion.div
@@ -113,7 +113,7 @@ export function ShuffleArea({
       </div>
 
       {/* Cards Grid - fixed height to prevent layout shift */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto min-h-[280px] md:min-h-[320px]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-5xl mx-auto min-h-[220px] md:min-h-[280px]">
         <AnimatePresence mode="popLayout">
           {categories.map((category, index) => (
             <motion.div
