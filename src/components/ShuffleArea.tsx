@@ -112,9 +112,9 @@ export function ShuffleArea({
         </motion.button>
       </div>
 
-      {/* Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
-        <AnimatePresence mode="wait">
+      {/* Cards Grid - fixed height to prevent layout shift */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto min-h-[280px] md:min-h-[320px]">
+        <AnimatePresence mode="popLayout">
           {categories.map((category, index) => (
             <motion.div
               key={`${category}-${shuffleKey}`}
