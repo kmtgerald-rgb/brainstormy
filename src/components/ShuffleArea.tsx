@@ -113,7 +113,7 @@ export function ShuffleArea({
       </div>
 
       {/* Cards Grid - fixed height to prevent layout shift */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-5xl mx-auto min-h-[220px] md:min-h-[280px]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-5xl mx-auto min-h-[160px] md:min-h-[280px]">
         <AnimatePresence mode="popLayout">
           {categories.map((category, index) => (
             <motion.div
@@ -136,11 +136,11 @@ export function ShuffleArea({
               ) : (
                 <div
                   className={cn(
-                    'aspect-[3/4] border border-dashed border-border/60 border-l-[3px] border-l-solid p-6 flex flex-col justify-end bg-muted/30',
+                    'aspect-[4/3] md:aspect-[3/4] border border-dashed border-border/40 border-l-[3px] border-l-solid p-4 flex flex-col justify-end bg-muted/20',
                     categoryAccentStyles[category]
                   )}
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
                     {categoryShortLabels[category]}
                   </span>
                 </div>
