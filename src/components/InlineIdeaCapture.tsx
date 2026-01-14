@@ -34,14 +34,23 @@ export function InlineIdeaCapture({
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUsingAI, setIsUsingAI] = useState(false);
   const [hasAppliedSuggestion, setHasAppliedSuggestion] = useState(false);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (descriptionRef.current) {
-      descriptionRef.current.style.height = "auto";
-      descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+  // Auto-resize textareas
+  const autoResize = (ref: React.RefObject<HTMLTextAreaElement>) => {
+    if (ref.current) {
+      ref.current.style.height = "auto";
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
     }
+  };
+
+  useEffect(() => {
+    autoResize(titleRef);
+  }, [title]);
+
+  useEffect(() => {
+    autoResize(descriptionRef);
   }, [description]);
 
   // Apply AI suggestion when it arrives
@@ -176,15 +185,16 @@ export function InlineIdeaCapture({
                 } : {}}
                 transition={{ duration: 0.4 }}
               >
-                <input
-                  type="text"
+                <textarea
+                  ref={titleRef}
                   placeholder="Name this combination..."
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
                     if (isUsingAI) setIsUsingAI(false);
                   }}
-                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 font-medium text-lg placeholder:text-muted-foreground/40 focus:outline-none transition-colors"
+                  rows={1}
+                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 font-medium text-lg placeholder:text-muted-foreground/40 focus:outline-none transition-colors resize-none overflow-hidden min-h-[2rem]"
                 />
               </motion.div>
 
