@@ -40,10 +40,16 @@ export function DeckConfigurator({
   }, [activePreset.id, activePreset.config.insight.context]);
 
   const handleInsightVariantChange = (variant: InsightVariant) => {
+    // When switching variants, only update the variant - don't pass stale context
+    // Context will be submitted when user clicks Generate
     if (variant === 'general') {
       onInsightChange(variant);
     } else {
-      onInsightChange(variant, contextInput);
+      // Just switch variant, clear local context if switching between industry/region
+      if (variant !== insightVariant) {
+        setContextInput('');
+      }
+      onInsightChange(variant);
     }
   };
 

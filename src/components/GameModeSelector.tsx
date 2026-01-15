@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, Clock, Target, Zap, Trophy, Settings2 } from 'lucide-react';
+import { ChevronDown, Clock, Target, Zap, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -40,11 +40,6 @@ const modeConfig: Record<GameMode, { label: string; icon: typeof Zap; descriptio
     icon: Target,
     description: 'Reach an idea goal',
   },
-  competition: {
-    label: 'Competition',
-    icon: Trophy,
-    description: 'Compete for ideas',
-  },
 };
 
 const durationOptions = [
@@ -73,7 +68,7 @@ export function GameModeSelector({
   const config = modeConfig[mode];
   const Icon = config.icon;
 
-  const showSettings = mode === 'time-attack' || mode === 'target' || mode === 'competition';
+  const showSettings = mode === 'time-attack' || mode === 'target';
 
   return (
     <div className="flex items-center gap-2">

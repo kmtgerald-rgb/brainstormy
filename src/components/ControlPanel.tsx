@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { Settings, User, X } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Sheet,
   SheetContent,
@@ -9,31 +7,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { ModeToggle } from './ModeToggle';
 import { GameModeSelector } from './GameModeSelector';
-import { SessionPanel } from './SessionPanel';
 import { HowItWorks } from './HowItWorks';
 import { DeckHub } from './DeckHub';
-import { Session } from '@/hooks/useSession';
-import { SessionHistoryItem } from '@/hooks/useSessionHistory';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
 import { DeckPreset } from '@/hooks/useDeckManager';
 import { Card, Category } from '@/data/defaultCards';
 import { InsightVariant, TechVariant } from '@/data/deckVariants';
-import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 interface ControlPanelProps {
-  mode: 'solo' | 'collaborative';
-  onModeChange: (mode: 'solo' | 'collaborative') => void;
-  session?: Session | null;
-  participantCount?: number;
-  isLoading?: boolean;
-  sessionHistory?: SessionHistoryItem[];
-  onCreateSession?: (name: string) => Promise<Session | null>;
-  onJoinSession?: (code: string) => Promise<Session | null>;
-  onLeaveSession?: () => void;
-  onRemoveFromHistory?: (sessionId: string) => void;
   isModeratorMode?: boolean;
   onToggleModeratorMode?: () => void;
   onSetFocus?: () => void;
@@ -63,21 +46,9 @@ interface ControlPanelProps {
   onExportPresets: () => string;
   onImportPresets: (json: string) => void;
   onResetDeck: () => void;
-  participantName?: string;
-  onParticipantNameChange?: (name: string) => void;
 }
 
 export function ControlPanel({
-  mode,
-  onModeChange,
-  session,
-  participantCount = 1,
-  isLoading = false,
-  sessionHistory = [],
-  onCreateSession,
-  onJoinSession,
-  onLeaveSession,
-  onRemoveFromHistory,
   isModeratorMode = false,
   onToggleModeratorMode,
   onSetFocus,
@@ -106,24 +77,7 @@ export function ControlPanel({
   onExportPresets,
   onImportPresets,
   onResetDeck,
-  participantName = '',
-  onParticipantNameChange,
 }: ControlPanelProps) {
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState(participantName);
-
-  const handleSaveName = () => {
-    if (onParticipantNameChange && editedName.trim()) {
-      onParticipantNameChange(editedName.trim());
-    }
-    setIsEditingName(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditedName(participantName);
-    setIsEditingName(false);
-  };
-
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -139,20 +93,6 @@ export function ControlPanel({
         <div className="mt-8 space-y-8">
           {/* How It Works */}
           <HowItWorks />
-
-          <Separator />
-
-          {/* Mode Toggle */}
-          <div className="space-y-3">
-            <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              Mode
-            </label>
-            <ModeToggle
-              mode={mode}
-              onModeChange={onModeChange}
-              disabled={isLoading || isGameRunning}
-            />
-          </div>
 
           <Separator />
 
@@ -173,7 +113,7 @@ export function ControlPanel({
             </div>
           )}
 
-          {/* Problem Focus - available in both modes */}
+          {/* Problem Focus */}
           {onSetFocus && (
             <>
               <Separator />
@@ -190,94 +130,6 @@ export function ControlPanel({
                   Set Problem Focus
                 </Button>
               </div>
-            </>
-          )}
-
-          {mode === 'collaborative' && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Facilitator
-                </label>
-                <div className="flex flex-col gap-2">
-                  {onToggleModeratorMode && (
-                    <Button
-                      variant={isModeratorMode ? 'secondary' : 'outline'}
-                      size="sm"
-                      onClick={onToggleModeratorMode}
-                      className={cn(
-                        'justify-start font-mono text-xs uppercase tracking-wider',
-                        isModeratorMode && 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30'
-                      )}
-                    >
-                      {isModeratorMode ? 'Moderator Mode On' : 'Enable Moderator Mode'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Session Controls - Only show in collaborative mode */}
-          {mode === 'collaborative' && onCreateSession && onJoinSession && onLeaveSession && onRemoveFromHistory && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Session
-                </label>
-                <SessionPanel
-                  session={session ?? null}
-                  participantCount={participantCount}
-                  isLoading={isLoading}
-                  sessionHistory={sessionHistory}
-                  onCreateSession={onCreateSession}
-                  onJoinSession={onJoinSession}
-                  onLeaveSession={onLeaveSession}
-                  onRemoveFromHistory={onRemoveFromHistory}
-                />
-              </div>
-
-              {/* Participant Name */}
-              {onParticipantNameChange && (
-                <div className="space-y-3">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Your Name
-                  </label>
-                  {isEditingName ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={editedName}
-                        onChange={(e) => setEditedName(e.target.value)}
-                        placeholder="Enter your name"
-                        className="flex-1 h-8 text-sm"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveName();
-                          if (e.key === 'Escape') handleCancelEdit();
-                        }}
-                      />
-                      <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditedName(participantName);
-                        setIsEditingName(true);
-                      }}
-                      className="justify-start gap-2 w-full font-mono text-xs"
-                    >
-                      <User className="w-3.5 h-3.5" />
-                      {participantName || 'Set your name'}
-                    </Button>
-                  )}
-                </div>
-              )}
             </>
           )}
 
