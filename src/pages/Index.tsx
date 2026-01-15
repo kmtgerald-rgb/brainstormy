@@ -1,43 +1,22 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/Header';
-import { CategorySection } from '@/components/CategorySection';
-import { CardLibraryHeader, ViewMode } from '@/components/CardLibraryHeader';
 import { ShuffleArea } from '@/components/ShuffleArea';
 import { FloatingActionBar } from '@/components/FloatingActionBar';
-import { IdeaBoard } from '@/components/IdeaBoard';
-import { CollaborativeIdeaBoard } from '@/components/CollaborativeIdeaBoard';
 import { EditCardDialog } from '@/components/EditCardDialog';
 import { ProblemStatementEditor } from '@/components/ProblemStatementEditor';
-import { ProblemStatementBanner } from '@/components/ProblemStatementBanner';
 import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
-import { CompetitionEndModal } from '@/components/CompetitionEndModal';
 import { IdeasTray } from '@/components/IdeasTray';
 import { useDeckManager } from '@/hooks/useDeckManager';
-import { useSession } from '@/hooks/useSession';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
-import { useCollaborativeGameMode } from '@/hooks/useCollaborativeGameMode';
 import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { FilterMode } from '@/hooks/useCards';
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
-const STORAGE_KEY = 'mashup-preferred-mode';
 const SAVED_IDEAS_KEY = 'mashup-saved-ideas';
 
 interface SavedIdea {
@@ -51,26 +30,8 @@ interface SavedIdea {
 }
 
 const Index = () => {
-  // Use the new unified deck manager
+  // Use the unified deck manager
   const deckManager = useDeckManager();
-
-  const {
-    session,
-    ideas: sessionIdeas,
-    wildcards: sessionWildcards,
-    isLoading,
-    participantCount,
-    sessionHistory,
-    removeFromHistory,
-    createSession,
-    joinSession,
-    leaveSession,
-    addIdea: addSessionIdea,
-    deleteIdea: deleteSessionIdea,
-    addWildcard: addSessionWildcard,
-    deleteWildcard: deleteSessionWildcard,
-    updateProblemStatement,
-  } = useSession();
 
   const {
     isModeratorMode,
@@ -86,43 +47,8 @@ const Index = () => {
     updateLocalProblemStatement,
   } = useModerator();
 
-  // Mode state with localStorage persistence
-  const [mode, setMode] = useState<'solo' | 'collaborative'>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === 'collaborative' ? 'collaborative' : 'solo';
-  });
-  const [pendingModeChange, setPendingModeChange] = useState<'solo' | 'collaborative' | null>(null);
-
   // Game mode hook
-  const gameMode = useGameMode(mode === 'collaborative');
-
-  // Persist mode preference
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, mode);
-  }, [mode]);
-
-  // Auto-switch to collaborative when joining/creating a session
-  useEffect(() => {
-    if (session && mode === 'solo') {
-      setMode('collaborative');
-    }
-  }, [session, mode]);
-
-  const handleModeChange = (newMode: 'solo' | 'collaborative') => {
-    if (newMode === 'solo' && session) {
-      setPendingModeChange(newMode);
-    } else {
-      setMode(newMode);
-    }
-  };
-
-  const confirmModeChange = () => {
-    if (pendingModeChange === 'solo') {
-      leaveSession();
-      setMode('solo');
-    }
-    setPendingModeChange(null);
-  };
+  const gameMode = useGameMode();
 
   // Local saved ideas state
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>(() => {
@@ -155,23 +81,12 @@ const Index = () => {
   const [isFocusEditorOpen, setIsFocusEditorOpen] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
-  const [participantName, setParticipantName] = useState(() => {
-    return localStorage.getItem('brainstormy-participant-name') || '';
-  });
   
   // AI suggestion hook
   const { suggestion, isLoading: isAILoading, getSuggestion, clearSuggestion } = useAISuggestion();
   const [autoAISuggest, setAutoAISuggest] = useState(() => {
     return localStorage.getItem('brainstormy-auto-ai-suggest') === 'true';
   });
-  
-  // Card Library state
-  const [libraryViewMode, setLibraryViewMode] = useState<ViewMode>('grid');
-  const [librarySearchTerm, setLibrarySearchTerm] = useState('');
-  const [showModifiedOnly, setShowModifiedOnly] = useState(false);
-
-  // Collaborative game mode hook
-  const collabGame = useCollaborativeGameMode(session?.id || null, participantName);
 
   // Apply card overrides to cards
   const applyOverrides = useCallback(
@@ -184,25 +99,13 @@ const Index = () => {
     [getCardText]
   );
 
-  // Get cards for category (includes session wildcards when in session)
+  // Get cards for category
   const getCardsForCategory = useCallback(
     (category: Category, filter: FilterMode = 'all'): Card[] => {
       const baseCards = deckManager.getCardsForCategory(category);
       const categoryWildcards = deckManager.wildcards.filter(w => w.category === category);
 
       let cards = [...baseCards, ...categoryWildcards];
-
-      if (session) {
-        const sessionCards = sessionWildcards
-          .filter((w) => w.category === category)
-          .map((w) => ({
-            id: w.id,
-            text: w.text,
-            category: w.category,
-            isWildcard: true,
-          }));
-        cards = [...cards, ...sessionCards];
-      }
 
       if (filter === 'default') {
         cards = cards.filter(c => !c.isWildcard && !c.isGenerated);
@@ -212,21 +115,7 @@ const Index = () => {
 
       return applyOverrides(cards);
     },
-    [deckManager, session, sessionWildcards, applyOverrides]
-  );
-
-  // Get cards for library with modified-only filter
-  const getLibraryCards = useCallback(
-    (category: Category, filter: FilterMode): Card[] => {
-      let cards = getCardsForCategory(category, filter);
-      
-      if (showModifiedOnly && isModeratorMode) {
-        cards = cards.filter((card) => hasOverride(card.id));
-      }
-      
-      return cards;
-    },
-    [getCardsForCategory, showModifiedOnly, isModeratorMode, hasOverride]
+    [deckManager, applyOverrides]
   );
 
   // All cards for shuffling with overrides applied
@@ -266,19 +155,11 @@ const Index = () => {
   };
 
   const handleAddWildcard = async (text: string, category: Category) => {
-    if (session) {
-      await addSessionWildcard(text, category);
-    } else {
-      deckManager.addWildcard(text, category);
-    }
+    deckManager.addWildcard(text, category);
   };
 
   const handleRemoveWildcard = async (id: string) => {
-    if (session && sessionWildcards.some((w) => w.id === id)) {
-      await deleteSessionWildcard(id);
-    } else {
-      deckManager.removeWildcard(id);
-    }
+    deckManager.removeWildcard(id);
   };
 
   const handleShuffle = useCallback(() => {
@@ -308,11 +189,11 @@ const Index = () => {
       // Auto-trigger AI suggestion if enabled
       if (autoAISuggest) {
         setTimeout(() => {
-          getSuggestion(newSelection, session?.problem_statement || localProblemStatement);
+          getSuggestion(newSelection, localProblemStatement);
         }, 400);
       }
     }, 200);
-  }, [allCardsForShuffle, clearSuggestion, autoAISuggest, getSuggestion, session?.problem_statement, localProblemStatement]);
+  }, [allCardsForShuffle, clearSuggestion, autoAISuggest, getSuggestion, localProblemStatement]);
 
   const handleAutoAISuggestChange = useCallback((enabled: boolean) => {
     setAutoAISuggest(enabled);
@@ -330,12 +211,11 @@ const Index = () => {
   };
 
   const handleGetSuggestion = () => {
-    getSuggestion(selectedCards, session?.problem_statement || localProblemStatement);
+    getSuggestion(selectedCards, localProblemStatement);
   };
 
   // Derive card states
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
-  const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
 
   const saveLocalIdea = useCallback((title: string, description: string, author?: string, isAIGenerated?: boolean) => {
     const cards = Object.values(selectedCards).filter((c): c is Card => c !== null);
@@ -369,60 +249,14 @@ const Index = () => {
   }, []);
 
   const handleSaveIdea = async (title: string, description: string, author?: string, isAIGenerated?: boolean) => {
-    if (author && author !== participantName) {
-      setParticipantName(author);
-      localStorage.setItem('brainstormy-participant-name', author);
-    }
-
-    if (session) {
-      const cards = {
-        insight: selectedCards.insight?.text || '',
-        asset: selectedCards.asset?.text || '',
-        tech: selectedCards.tech?.text || '',
-        random: selectedCards.random?.text || '',
-      };
-      await addSessionIdea(title, description, author, cards);
-      if (collabGame.mode === 'competition' && collabGame.isRunning) {
-        await collabGame.incrementScore();
-      }
-    } else {
-      saveLocalIdea(title, description, author, isAIGenerated);
-    }
+    saveLocalIdea(title, description, author, isAIGenerated);
     gameMode.incrementIdeas();
     clearSuggestion();
   };
-
-  // Direct save of AI suggestion to ideas
-  const handleAddSuggestionToIdeas = useCallback(async () => {
-    if (!suggestion) return;
-    
-    if (session) {
-      const cards = {
-        insight: selectedCards.insight?.text || '',
-        asset: selectedCards.asset?.text || '',
-        tech: selectedCards.tech?.text || '',
-        random: selectedCards.random?.text || '',
-      };
-      await addSessionIdea(suggestion.title, suggestion.description, participantName || undefined, cards);
-      if (collabGame.mode === 'competition' && collabGame.isRunning) {
-        await collabGame.incrementScore();
-      }
-    } else {
-      saveLocalIdea(suggestion.title, suggestion.description, undefined, true);
-    }
-    gameMode.incrementIdeas();
-    clearSuggestion();
-  }, [suggestion, session, selectedCards, participantName, addSessionIdea, collabGame, saveLocalIdea, gameMode, clearSuggestion]);
 
   const handleDeleteIdea = async (id: string) => {
-    if (session) {
-      await deleteSessionIdea(id);
-    } else {
-      deleteLocalIdea(id);
-    }
+    deleteLocalIdea(id);
   };
-
-  const displayedIdeas = session ? sessionIdeas : savedIdeas;
 
   const handlePlayAgain = () => {
     gameMode.resetGame();
@@ -448,34 +282,18 @@ const Index = () => {
     handleClear();
   }, [deckManager, resetProblemStatement, resetAllOverrides, handleClear]);
 
-  // Determine active game mode and canPlay
-  const activeGameMode = session ? collabGame.mode : gameMode.mode;
-  const activeCanPlay = session 
-    ? (collabGame.mode === 'freejam' || collabGame.isRunning) 
-    : gameMode.canPlay;
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header
-        mode={mode}
-        onModeChange={handleModeChange}
-        session={session}
-        participantCount={participantCount}
-        isLoading={isLoading}
-        sessionHistory={sessionHistory}
-        onCreateSession={createSession}
-        onJoinSession={joinSession}
-        onLeaveSession={leaveSession}
-        onRemoveFromHistory={removeFromHistory}
         isModeratorMode={isModeratorMode}
         onToggleModeratorMode={toggleModeratorMode}
         onSetFocus={() => setIsFocusEditorOpen(true)}
-        gameMode={session ? collabGame.mode : gameMode.mode}
-        gameSettings={session ? collabGame.settings : gameMode.settings}
-        availableGameModes={session ? ['freejam', 'time-attack', 'target', 'competition'] : gameMode.availableModes}
-        isGameRunning={session ? collabGame.isRunning : gameMode.isRunning}
-        onGameModeChange={session ? collabGame.updateGameMode : gameMode.changeMode}
-        onGameSettingsChange={session ? collabGame.updateGameSettings : gameMode.updateSettings}
+        gameMode={gameMode.mode}
+        gameSettings={gameMode.settings}
+        availableGameModes={gameMode.availableModes}
+        isGameRunning={gameMode.isRunning}
+        onGameModeChange={gameMode.changeMode}
+        onGameSettingsChange={gameMode.updateSettings}
         // Deck Hub props
         deckPresets={deckManager.presets}
         activeDeckPreset={deckManager.activePreset}
@@ -495,57 +313,31 @@ const Index = () => {
         onExportPresets={deckManager.exportPresets}
         onImportPresets={deckManager.importPresets}
         onResetDeck={handleGlobalReset}
-        participantName={participantName}
-        onParticipantNameChange={(name) => {
-          setParticipantName(name);
-          localStorage.setItem('brainstormy-participant-name', name);
-        }}
       />
 
       <main className="flex-1 container mx-auto px-4 py-12 md:py-16 space-y-8">
         {/* Game HUD - minimal, only shows for timed modes */}
-        {activeGameMode !== 'freejam' && (
+        {gameMode.mode !== 'freejam' && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {session ? (
-              <GameHUD
-                mode={collabGame.mode}
-                settings={collabGame.settings}
-                isRunning={collabGame.isRunning}
-                isPaused={false}
-                timeRemaining={collabGame.timeRemaining}
-                ideasCount={sessionIdeas.length}
-                requiresStart={collabGame.mode !== 'freejam'}
-                formatTime={collabGame.formatTime}
-                onStart={collabGame.startGame}
-                onPause={() => {}}
-                onResume={() => {}}
-                onEnd={collabGame.endGame}
-                onReset={() => {}}
-                scores={collabGame.scores}
-                currentParticipant={participantName}
-                isCollaborative
-              />
-            ) : (
-              <GameHUD
-                mode={gameMode.mode}
-                settings={gameMode.settings}
-                isRunning={gameMode.isRunning}
-                isPaused={gameMode.isPaused}
-                timeRemaining={gameMode.timeRemaining}
-                ideasCount={gameMode.ideasCount}
-                requiresStart={gameMode.requiresStart}
-                formatTime={gameMode.formatTime}
-                onStart={gameMode.startGame}
-                onPause={gameMode.pauseGame}
-                onResume={gameMode.resumeGame}
-                onEnd={gameMode.endGame}
-                onReset={gameMode.resetGame}
-              />
-            )}
+            <GameHUD
+              mode={gameMode.mode}
+              settings={gameMode.settings}
+              isRunning={gameMode.isRunning}
+              isPaused={gameMode.isPaused}
+              timeRemaining={gameMode.timeRemaining}
+              ideasCount={gameMode.ideasCount}
+              requiresStart={gameMode.requiresStart}
+              formatTime={gameMode.formatTime}
+              onStart={gameMode.startGame}
+              onPause={gameMode.pauseGame}
+              onResume={gameMode.resumeGame}
+              onEnd={gameMode.endGame}
+              onReset={gameMode.resetGame}
+            />
           </motion.div>
         )}
 
@@ -559,14 +351,12 @@ const Index = () => {
             selectedCards={selectedCards}
             shuffleKey={shuffleKey}
             isShuffling={isShuffling}
-            problemStatement={session?.problem_statement || localProblemStatement}
+            problemStatement={localProblemStatement}
             onEditProblem={() => setIsFocusEditorOpen(true)}
             onSaveIdea={handleSaveIdea}
             onAISuggest={handleGetSuggestion}
             aiSuggestion={suggestion}
             isAILoading={isAILoading}
-            isCollaborative={!!session}
-            participantName={participantName}
             autoAISuggest={autoAISuggest}
             onAutoAISuggestChange={handleAutoAISuggestChange}
           />
@@ -576,16 +366,15 @@ const Index = () => {
 
       {/* Ideas Tray - collapsible footer */}
       <IdeasTray
-        ideas={displayedIdeas}
+        ideas={savedIdeas}
         onDelete={handleDeleteIdea}
-        isCollaborative={!!session}
       />
 
       {/* Floating Action Bar */}
       <FloatingActionBar
         hasAnyCard={hasAnyCard}
         isShuffling={isShuffling}
-        canPlay={activeCanPlay}
+        canPlay={gameMode.canPlay}
         onShuffle={handleShuffle}
         onClear={handleClear}
       />
@@ -612,13 +401,13 @@ const Index = () => {
       <ProblemStatementEditor
         isOpen={isFocusEditorOpen}
         onClose={() => setIsFocusEditorOpen(false)}
-        currentContext={session?.problem_context ?? localProblemContext}
-        currentStatement={session?.problem_statement ?? localProblemStatement}
-        onSave={session ? updateProblemStatement : async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
+        currentContext={localProblemContext}
+        currentStatement={localProblemStatement}
+        onSave={async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
       />
 
       <GameEndModal
-        isOpen={gameMode.showEndModal && !session}
+        isOpen={gameMode.showEndModal}
         mode={gameMode.mode}
         settings={gameMode.settings}
         ideasCount={gameMode.ideasCount}
@@ -628,30 +417,6 @@ const Index = () => {
         onPlayAgain={handlePlayAgain}
         onViewIdeas={handleViewIdeas}
       />
-
-      <CompetitionEndModal
-        isOpen={collabGame.showEndModal && !!session}
-        scores={collabGame.scores}
-        currentParticipant={participantName}
-        onClose={collabGame.closeEndModal}
-        onViewIdeas={collabGame.closeEndModal}
-      />
-
-      {/* Mode change confirmation dialog */}
-      <AlertDialog open={!!pendingModeChange} onOpenChange={() => setPendingModeChange(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Leave current session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Switching to Solo mode will leave your current collaborative session. Your ideas will remain saved in the session.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmModeChange}>Leave & Switch</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

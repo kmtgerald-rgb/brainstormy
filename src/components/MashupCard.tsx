@@ -72,11 +72,25 @@ export function MashupCard({
     lg: 'p-6 min-h-[180px]',
   };
 
-  const textSizes = {
-    sm: 'text-sm leading-relaxed',
-    md: 'text-base leading-relaxed',
-    lg: 'text-lg leading-relaxed',
+  // Responsive text sizing based on content length
+  const getResponsiveTextSize = (text: string, baseSize: 'sm' | 'md' | 'lg') => {
+    const length = text.length;
+    if (baseSize === 'lg') {
+      if (length > 120) return 'text-sm leading-snug';
+      if (length > 80) return 'text-base leading-relaxed';
+      return 'text-lg leading-relaxed';
+    }
+    if (baseSize === 'md') {
+      if (length > 100) return 'text-sm leading-snug';
+      if (length > 60) return 'text-[15px] leading-relaxed';
+      return 'text-base leading-relaxed';
+    }
+    // sm
+    if (length > 80) return 'text-xs leading-snug';
+    return 'text-sm leading-relaxed';
   };
+
+  const textSizeClass = getResponsiveTextSize(card.text, size);
 
   const handleFlip = (e: React.MouseEvent) => {
     if (!flippable) return;
@@ -178,7 +192,7 @@ export function MashupCard({
           {categoryShortLabels[card.category]}
         </span>
       )}
-      <p className={cn('font-serif', textSizes[size])}>{card.text}</p>
+      <p className={cn('font-serif', textSizeClass)}>{card.text}</p>
     </div>
   );
 

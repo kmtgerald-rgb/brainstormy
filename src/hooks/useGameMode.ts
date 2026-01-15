@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export type GameMode = 'freejam' | 'time-attack' | 'target' | 'competition';
-export type SoloGameMode = Exclude<GameMode, 'competition'>;
+export type GameMode = 'freejam' | 'time-attack' | 'target';
 
 export interface GameSettings {
   duration: number; // seconds
@@ -24,7 +23,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   targetCount: 10,
 };
 
-export function useGameMode(isCollaborative: boolean = false) {
+export function useGameMode() {
   const [mode, setMode] = useState<GameMode>('freejam');
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [isRunning, setIsRunning] = useState(false);
@@ -37,10 +36,7 @@ export function useGameMode(isCollaborative: boolean = false) {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Available modes based on solo/collaborative
-  const availableModes: GameMode[] = isCollaborative
-    ? ['freejam', 'time-attack', 'target', 'competition']
-    : ['freejam', 'time-attack', 'target'];
+  const availableModes: GameMode[] = ['freejam', 'time-attack', 'target'];
 
   // Clear timer on unmount
   useEffect(() => {
@@ -51,7 +47,7 @@ export function useGameMode(isCollaborative: boolean = false) {
 
   // Timer logic
   useEffect(() => {
-    if (isRunning && !isPaused && (mode === 'time-attack' || mode === 'competition')) {
+    if (isRunning && !isPaused && mode === 'time-attack') {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
@@ -93,7 +89,7 @@ export function useGameMode(isCollaborative: boolean = false) {
     setEndedAt(null);
     setShowEndModal(false);
 
-    if (mode === 'time-attack' || mode === 'competition') {
+    if (mode === 'time-attack') {
       setTimeRemaining(settings.duration);
     }
   }, [mode, settings.duration]);

@@ -18,8 +18,6 @@ interface ShuffleAreaProps {
   onAISuggest?: () => void;
   aiSuggestion?: { title: string; description: string } | null;
   isAILoading?: boolean;
-  isCollaborative?: boolean;
-  participantName?: string;
   autoAISuggest?: boolean;
   onAutoAISuggestChange?: (enabled: boolean) => void;
 }
@@ -43,8 +41,6 @@ export function ShuffleArea({
   onAISuggest,
   aiSuggestion,
   isAILoading = false,
-  isCollaborative = false,
-  participantName,
   autoAISuggest = false,
   onAutoAISuggestChange,
 }: ShuffleAreaProps) {
@@ -66,7 +62,7 @@ export function ShuffleArea({
   };
 
   return (
-    <div className="text-center space-y-4 md:space-y-6">
+    <div className="text-center space-y-3 md:space-y-4">
       {/* Hero text + Problem Focus */}
       <div className="space-y-2">
         <AnimatePresence>
@@ -89,7 +85,7 @@ export function ShuffleArea({
         <motion.button
           onClick={onEditProblem}
           className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all',
+            'inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all max-w-xl',
             'font-mono text-xs uppercase tracking-wider',
             problemStatement 
               ? 'bg-foreground/5 text-foreground hover:bg-foreground/10 border border-border/50' 
@@ -100,7 +96,7 @@ export function ShuffleArea({
         >
           {problemStatement ? (
             <>
-              <span className="max-w-md truncate">{problemStatement}</span>
+              <span className="max-w-lg text-center line-clamp-2 break-words">{problemStatement}</span>
               <Pencil className="w-3 h-3 flex-shrink-0 opacity-60" />
             </>
           ) : (
@@ -113,7 +109,7 @@ export function ShuffleArea({
       </div>
 
       {/* Cards Grid - fixed height to prevent layout shift */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-5xl mx-auto min-h-[160px] md:min-h-[280px]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-5xl mx-auto min-h-[140px] md:min-h-[240px]">
         <AnimatePresence mode="popLayout">
           {categories.map((category, index) => (
             <motion.div
@@ -158,8 +154,6 @@ export function ShuffleArea({
           onAISuggest={onAISuggest}
           suggestion={aiSuggestion}
           isAILoading={isAILoading}
-          isCollaborative={isCollaborative}
-          participantName={participantName}
           autoAISuggest={autoAISuggest}
           onAutoAISuggestChange={onAutoAISuggestChange}
         />

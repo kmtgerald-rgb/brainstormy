@@ -10,8 +10,6 @@ interface InlineIdeaCaptureProps {
   onAISuggest: () => void;
   suggestion?: { title: string; description: string } | null;
   isAILoading: boolean;
-  isCollaborative?: boolean;
-  participantName?: string;
   isVisible: boolean;
   autoAISuggest?: boolean;
   onAutoAISuggestChange?: (enabled: boolean) => void;
@@ -22,15 +20,12 @@ export function InlineIdeaCapture({
   onAISuggest,
   suggestion,
   isAILoading,
-  isCollaborative = false,
-  participantName,
   isVisible,
   autoAISuggest = false,
   onAutoAISuggestChange,
 }: InlineIdeaCaptureProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [author, setAuthor] = useState(participantName || "");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isUsingAI, setIsUsingAI] = useState(false);
   const [hasAppliedSuggestion, setHasAppliedSuggestion] = useState(false);
@@ -73,8 +68,7 @@ export function InlineIdeaCapture({
   const handleCapture = () => {
     if (!title.trim()) return;
 
-    const authorName = isCollaborative ? (author.trim() || participantName || "Anonymous") : undefined;
-    onSave(title.trim(), description.trim(), authorName, isUsingAI);
+    onSave(title.trim(), description.trim(), undefined, isUsingAI);
 
     // Show success feedback
     setShowSuccess(true);
@@ -131,7 +125,7 @@ export function InlineIdeaCapture({
           className="w-full max-w-2xl mx-auto"
           onKeyDown={handleKeyDown}
         >
-          <div className="bg-transparent p-6 space-y-6">
+          <div className="bg-transparent p-4 space-y-4">
             {/* Header with AI Toggle */}
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
@@ -178,7 +172,7 @@ export function InlineIdeaCapture({
             </div>
 
             {/* Form Fields - Underline Style */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               <motion.div
                 animate={isUsingAI && title ? { 
                   opacity: [0.7, 1]
@@ -216,17 +210,6 @@ export function InlineIdeaCapture({
                   className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none transition-colors resize-none overflow-hidden min-h-[1.5rem]"
                 />
               </motion.div>
-
-              {/* Author field for collaborative mode */}
-              {isCollaborative && !participantName && (
-                <input
-                  type="text"
-                  placeholder="Your name..."
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  className="w-full bg-transparent border-0 border-b border-border/50 focus:border-primary pb-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none transition-colors"
-                />
-              )}
             </div>
 
             {/* AI Loading Indicator */}

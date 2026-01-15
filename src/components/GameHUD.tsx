@@ -1,10 +1,8 @@
 import { motion } from 'framer-motion';
-import { Clock, Target, Trophy, Zap, Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { Clock, Target, Zap, Play, Pause, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
-import { SessionScore } from '@/hooks/useCollaborativeGameMode';
-import { CompetitionLeaderboard } from './CompetitionLeaderboard';
 import { cn } from '@/lib/utils';
 
 interface GameHUDProps {
@@ -21,16 +19,12 @@ interface GameHUDProps {
   onResume: () => void;
   onEnd: () => void;
   onReset: () => void;
-  scores?: SessionScore[];
-  currentParticipant?: string;
-  isCollaborative?: boolean;
 }
 
 const modeConfig: Record<GameMode, { label: string; icon: typeof Zap }> = {
   freejam: { label: 'Freejam', icon: Zap },
   'time-attack': { label: 'Time Attack', icon: Clock },
   target: { label: 'Target', icon: Target },
-  competition: { label: 'Competition', icon: Trophy },
 };
 
 export function GameHUD({
@@ -46,10 +40,6 @@ export function GameHUD({
   onPause,
   onResume,
   onEnd,
-  onReset,
-  scores = [],
-  currentParticipant = '',
-  isCollaborative = false,
 }: GameHUDProps) {
   const config = modeConfig[mode];
   const Icon = config.icon;
@@ -59,7 +49,7 @@ export function GameHUD({
     return null;
   }
 
-  const showTimer = mode === 'time-attack' || mode === 'competition';
+  const showTimer = mode === 'time-attack';
   const showProgress = mode === 'target';
   const progress = showProgress ? (ideasCount / settings.targetCount) * 100 : 0;
 
@@ -113,16 +103,14 @@ export function GameHUD({
 
       {isRunning && (
         <div className="flex items-center gap-2">
-          {!isCollaborative && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={isPaused ? onResume : onPause}
-              className="h-8 w-8"
-            >
-              {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={isPaused ? onResume : onPause}
+            className="h-8 w-8"
+          >
+            {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -132,11 +120,6 @@ export function GameHUD({
             <Square className="w-4 h-4" />
           </Button>
         </div>
-      )}
-
-      {/* Competition Leaderboard */}
-      {mode === 'competition' && isCollaborative && scores.length > 0 && (
-        <CompetitionLeaderboard scores={scores} currentParticipant={currentParticipant} />
       )}
     </motion.div>
   );

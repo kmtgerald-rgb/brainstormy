@@ -2,32 +2,25 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { SavedIdea } from '@/hooks/useCards';
-import { SessionIdea } from '@/hooks/useSession';
 import { IdeaBoard } from './IdeaBoard';
-import { CollaborativeIdeaBoard } from './CollaborativeIdeaBoard';
 import { cn } from '@/lib/utils';
 
 interface IdeasTrayProps {
-  ideas: SavedIdea[] | SessionIdea[];
+  ideas: SavedIdea[];
   onDelete: (id: string) => void;
-  isCollaborative?: boolean;
 }
 
-export function IdeasTray({ ideas, onDelete, isCollaborative = false }: IdeasTrayProps) {
+export function IdeasTray({ ideas, onDelete }: IdeasTrayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Calculate separate counts for user ideas and AI sparks
   const { userIdeasCount, aiSparksCount } = useMemo(() => {
-    if (isCollaborative) {
-      return { userIdeasCount: ideas.length, aiSparksCount: 0 };
-    }
-    const savedIdeas = ideas as SavedIdea[];
-    const aiCount = savedIdeas.filter(idea => idea.isAIGenerated).length;
+    const aiCount = ideas.filter(idea => idea.isAIGenerated).length;
     return {
-      userIdeasCount: savedIdeas.length - aiCount,
+      userIdeasCount: ideas.length - aiCount,
       aiSparksCount: aiCount,
     };
-  }, [ideas, isCollaborative]);
+  }, [ideas]);
 
   return (
     <div className="border-t border-border">
@@ -85,11 +78,7 @@ export function IdeasTray({ ideas, onDelete, isCollaborative = false }: IdeasTra
             className="overflow-hidden"
           >
             <div className="container mx-auto px-4 py-8">
-              {isCollaborative ? (
-                <CollaborativeIdeaBoard ideas={ideas as SessionIdea[]} onDelete={onDelete} />
-              ) : (
-                <IdeaBoard ideas={ideas as SavedIdea[]} onDelete={onDelete} />
-              )}
+              <IdeaBoard ideas={ideas} onDelete={onDelete} />
             </div>
           </motion.div>
         )}
