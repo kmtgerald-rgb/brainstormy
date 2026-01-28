@@ -359,6 +359,15 @@ const Index = () => {
             isAILoading={isAILoading}
             autoAISuggest={autoAISuggest}
             onAutoAISuggestChange={handleAutoAISuggestChange}
+            // Deck switcher props
+            insightVariant={deckManager.activePreset.config.insight.variant}
+            insightContext={deckManager.activePreset.config.insight.context}
+            catalystVariant={deckManager.activePreset.config.catalyst.variant}
+            hasGeneratedInsightCards={(deckManager.activePreset.generatedCards?.length ?? 0) > 0}
+            isDeckGenerating={deckManager.isGenerating}
+            onInsightChange={deckManager.setInsightVariant}
+            onCatalystChange={deckManager.setCatalystVariant}
+            onGenerateDeck={deckManager.generateCards}
           />
         </motion.section>
 

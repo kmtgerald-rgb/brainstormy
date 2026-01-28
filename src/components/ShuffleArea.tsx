@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pencil } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
+import { InsightVariant, TechVariant } from '@/data/deckVariants';
 import { MashupCard } from './MashupCard';
 import { InlineIdeaCapture } from './InlineIdeaCapture';
+import { DeckSwitcher } from './DeckSwitcher';
 import { cn } from '@/lib/utils';
 import { useCardExplanation } from '@/hooks/useCardExplanation';
 
@@ -20,6 +22,15 @@ interface ShuffleAreaProps {
   isAILoading?: boolean;
   autoAISuggest?: boolean;
   onAutoAISuggestChange?: (enabled: boolean) => void;
+  // Deck switcher props
+  insightVariant?: InsightVariant;
+  insightContext?: string;
+  catalystVariant?: TechVariant;
+  hasGeneratedInsightCards?: boolean;
+  isDeckGenerating?: boolean;
+  onInsightChange?: (variant: InsightVariant, context?: string) => void;
+  onCatalystChange?: (variant: TechVariant) => void;
+  onGenerateDeck?: () => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -43,6 +54,15 @@ export function ShuffleArea({
   isAILoading = false,
   autoAISuggest = false,
   onAutoAISuggestChange,
+  // Deck switcher props
+  insightVariant = 'general',
+  insightContext,
+  catalystVariant = 'technology',
+  hasGeneratedInsightCards = false,
+  isDeckGenerating = false,
+  onInsightChange,
+  onCatalystChange,
+  onGenerateDeck,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -117,6 +137,7 @@ export function ShuffleArea({
               initial={isShuffling ? { opacity: 0, y: 8 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.08 }}
+              className="flex flex-col"
             >
               {selectedCards[category] ? (
                 <MashupCard
@@ -139,6 +160,30 @@ export function ShuffleArea({
                   <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
                     {categoryShortLabels[category]}
                   </span>
+                </div>
+              )}
+              
+              {/* Deck Switcher - only for insight (index 0) and tech (index 2) */}
+              {category === 'insight' && (
+                <div className="mt-1 flex justify-center">
+                  <DeckSwitcher
+                    type="insight"
+                    insightVariant={insightVariant}
+                    insightContext={insightContext}
+                    hasGeneratedCards={hasGeneratedInsightCards}
+                    isGenerating={isDeckGenerating}
+                    onInsightChange={onInsightChange}
+                    onGenerate={onGenerateDeck}
+                  />
+                </div>
+              )}
+              {category === 'tech' && (
+                <div className="mt-1 flex justify-center">
+                  <DeckSwitcher
+                    type="catalyst"
+                    catalystVariant={catalystVariant}
+                    onCatalystChange={onCatalystChange}
+                  />
                 </div>
               )}
             </motion.div>
