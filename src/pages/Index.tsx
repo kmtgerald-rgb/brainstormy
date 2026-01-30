@@ -8,6 +8,7 @@ import { ProblemStatementEditor } from '@/components/ProblemStatementEditor';
 import { GameHUD } from '@/components/GameHUD';
 import { GameEndModal } from '@/components/GameEndModal';
 import { IdeasTray } from '@/components/IdeasTray';
+import { DeckBrowserSheet } from '@/components/DeckBrowserSheet';
 import { useDeckManager } from '@/hooks/useDeckManager';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
@@ -294,22 +295,6 @@ const Index = () => {
         isGameRunning={gameMode.isRunning}
         onGameModeChange={gameMode.changeMode}
         onGameSettingsChange={gameMode.updateSettings}
-        // Deck Hub props
-        deckPresets={deckManager.presets}
-        activeDeckPreset={deckManager.activePreset}
-        deckWildcards={deckManager.wildcards}
-        isDeckGenerating={deckManager.isGenerating}
-        onActivateDeckPreset={deckManager.activatePreset}
-        onCreateDeckPreset={(name) => deckManager.createPreset(name, deckManager.activePreset.config)}
-        onDuplicateDeckPreset={deckManager.duplicatePreset}
-        onDeleteDeckPreset={deckManager.deletePreset}
-        onInsightChange={deckManager.setInsightVariant}
-        onCatalystChange={deckManager.setCatalystVariant}
-        onGenerateDeck={deckManager.generateCards}
-        onAddWildcard={handleAddWildcard}
-        onRemoveWildcard={handleRemoveWildcard}
-        onEditWildcard={deckManager.updateWildcard}
-        getCardsForCategory={deckManager.getCardsForCategory}
         onExportPresets={deckManager.exportPresets}
         onImportPresets={deckManager.importPresets}
         onResetDeck={handleGlobalReset}
@@ -368,6 +353,13 @@ const Index = () => {
             onInsightChange={deckManager.setInsightVariant}
             onCatalystChange={deckManager.setCatalystVariant}
             onGenerateDeck={deckManager.generateCards}
+            // Deck browser props
+            activePreset={deckManager.activePreset}
+            wildcards={deckManager.wildcards}
+            getCardsForCategory={deckManager.getCardsForCategory}
+            onAddWildcard={handleAddWildcard}
+            onRemoveWildcard={handleRemoveWildcard}
+            onEditWildcard={deckManager.updateWildcard}
           />
         </motion.section>
 

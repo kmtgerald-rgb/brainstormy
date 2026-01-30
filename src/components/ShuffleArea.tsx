@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pencil } from 'lucide-react';
+import { Pencil, Layers } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { InsightVariant, TechVariant } from '@/data/deckVariants';
 import { MashupCard } from './MashupCard';
 import { InlineIdeaCapture } from './InlineIdeaCapture';
 import { DeckSwitcher } from './DeckSwitcher';
+import { DeckBrowserSheet } from './DeckBrowserSheet';
+import { DeckPreset } from '@/hooks/useDeckManager';
 import { cn } from '@/lib/utils';
 import { useCardExplanation } from '@/hooks/useCardExplanation';
 
@@ -30,7 +32,14 @@ interface ShuffleAreaProps {
   isDeckGenerating?: boolean;
   onInsightChange?: (variant: InsightVariant, context?: string) => void;
   onCatalystChange?: (variant: TechVariant) => void;
-  onGenerateDeck?: () => void;
+  onGenerateDeck?: (forceRegenerate?: boolean, variant?: InsightVariant, context?: string) => void;
+  // Deck browser props
+  activePreset?: DeckPreset;
+  wildcards?: Card[];
+  getCardsForCategory?: (category: Category) => Card[];
+  onAddWildcard?: (text: string, category: Category) => void;
+  onRemoveWildcard?: (id: string) => void;
+  onEditWildcard?: (id: string, text: string) => void;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -63,6 +72,13 @@ export function ShuffleArea({
   onInsightChange,
   onCatalystChange,
   onGenerateDeck,
+  // Deck browser props
+  activePreset,
+  wildcards = [],
+  getCardsForCategory,
+  onAddWildcard,
+  onRemoveWildcard,
+  onEditWildcard,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -126,6 +142,20 @@ export function ShuffleArea({
             </>
           )}
         </motion.button>
+
+        {/* Deck Browser - inline trigger */}
+        {activePreset && getCardsForCategory && onAddWildcard && onRemoveWildcard && (
+          <div className="flex justify-center">
+            <DeckBrowserSheet
+              activePreset={activePreset}
+              wildcards={wildcards}
+              getCardsForCategory={getCardsForCategory}
+              onAddWildcard={onAddWildcard}
+              onRemoveWildcard={onRemoveWildcard}
+              onEditWildcard={onEditWildcard}
+            />
+          </div>
+        )}
       </div>
 
       {/* Cards Grid - fixed height to prevent layout shift */}
