@@ -1,4 +1,4 @@
-import { Settings } from 'lucide-react';
+import { Settings, RotateCcw, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -7,13 +7,20 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { GameModeSelector } from './GameModeSelector';
 import { HowItWorks } from './HowItWorks';
-import { DeckHub } from './DeckHub';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
-import { DeckPreset } from '@/hooks/useDeckManager';
-import { Card, Category } from '@/data/defaultCards';
-import { InsightVariant, TechVariant } from '@/data/deckVariants';
 import { Separator } from '@/components/ui/separator';
 
 interface ControlPanelProps {
@@ -27,25 +34,10 @@ interface ControlPanelProps {
   onGameModeChange?: (mode: GameMode) => void;
   onGameSettingsChange?: (settings: Partial<GameSettings>) => void;
   
-  // Deck Hub props
-  deckPresets: DeckPreset[];
-  activeDeckPreset: DeckPreset;
-  deckWildcards: Card[];
-  isDeckGenerating: boolean;
-  onActivateDeckPreset: (presetId: string) => void;
-  onCreateDeckPreset: (name: string) => void;
-  onDuplicateDeckPreset: (presetId: string) => void;
-  onDeleteDeckPreset: (presetId: string) => void;
-  onInsightChange: (variant: InsightVariant, context?: string) => void;
-  onCatalystChange: (variant: TechVariant) => void;
-  onGenerateDeck: (forceRegenerate?: boolean) => void;
-  onAddWildcard: (text: string, category: Category) => void;
-  onRemoveWildcard: (id: string) => void;
-  onEditWildcard?: (id: string, text: string) => void;
-  getCardsForCategory: (category: Category) => Card[];
+  // Export/Import/Reset
   onExportPresets: () => string;
   onImportPresets: (json: string) => void;
-  onResetDeck: () => void;
+  onReset: () => void;
 }
 
 export function ControlPanel({
@@ -58,26 +50,40 @@ export function ControlPanel({
   isGameRunning = false,
   onGameModeChange,
   onGameSettingsChange,
-  // Deck Hub props
-  deckPresets,
-  activeDeckPreset,
-  deckWildcards,
-  isDeckGenerating,
-  onActivateDeckPreset,
-  onCreateDeckPreset,
-  onDuplicateDeckPreset,
-  onDeleteDeckPreset,
-  onInsightChange,
-  onCatalystChange,
-  onGenerateDeck,
-  onAddWildcard,
-  onRemoveWildcard,
-  onEditWildcard,
-  getCardsForCategory,
+  // Export/Import/Reset
   onExportPresets,
   onImportPresets,
-  onResetDeck,
+  onReset,
 }: ControlPanelProps) {
+  const handleExport = () => {
+    const json = onExportPresets();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'brainstormy-presets.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const json = e.target?.result as string;
+        onImportPresets(json);
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -135,27 +141,67 @@ export function ControlPanel({
 
           <Separator />
 
-          {/* Deck Hub */}
-          <DeckHub
-            presets={deckPresets}
-            activePreset={activeDeckPreset}
-            wildcards={deckWildcards}
-            isGenerating={isDeckGenerating}
-            onActivatePreset={onActivateDeckPreset}
-            onCreatePreset={onCreateDeckPreset}
-            onDuplicatePreset={onDuplicateDeckPreset}
-            onDeletePreset={onDeleteDeckPreset}
-            onInsightChange={onInsightChange}
-            onCatalystChange={onCatalystChange}
-            onGenerate={onGenerateDeck}
-            onAddWildcard={onAddWildcard}
-            onRemoveWildcard={onRemoveWildcard}
-            onEditWildcard={onEditWildcard}
-            getCardsForCategory={getCardsForCategory}
-            onExport={onExportPresets}
-            onImport={onImportPresets}
-            onReset={onResetDeck}
-          />
+          {/* Backup & Restore */}
+          <div className="space-y-3">
+            <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Backup & Restore
+            </label>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
+              >
+                <Download className="w-3 h-3" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImport}
+                className="flex-1 gap-2 font-mono text-[10px] uppercase tracking-wider"
+              >
+                <Upload className="w-3 h-3" />
+                Import
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Reset */}
+          <div className="space-y-3">
+            <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Reset
+            </label>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 font-mono text-[10px] uppercase tracking-wider text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset All to Defaults
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset everything?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will clear all custom presets, wildcards, AI-generated cards, saved ideas, problem focus, and card edits. Default presets will be restored. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onReset} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Reset All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
