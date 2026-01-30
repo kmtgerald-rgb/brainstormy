@@ -17,7 +17,7 @@ interface DeckSwitcherProps {
   isGenerating?: boolean;
   onInsightChange?: (variant: InsightVariant, context?: string) => void;
   onCatalystChange?: (variant: TechVariant) => void;
-  onGenerate?: () => void;
+  onGenerate?: (forceRegenerate?: boolean, variant?: InsightVariant, context?: string) => void;
 }
 
 export function DeckSwitcher({
@@ -73,8 +73,12 @@ export function DeckSwitcher({
 
   const handleGenerate = () => {
     if (type === 'insight' && needsInput && canGenerate) {
-      onInsightChange?.(localVariant as InsightVariant, contextInput.trim());
-      onGenerate?.();
+      const variant = localVariant as InsightVariant;
+      const context = contextInput.trim();
+      // Update the config state
+      onInsightChange?.(variant, context);
+      // Pass variant and context directly to generate to avoid race condition
+      onGenerate?.(false, variant, context);
     }
   };
 

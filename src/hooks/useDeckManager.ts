@@ -220,17 +220,25 @@ export function useDeckManager() {
   }, [updateActiveConfig]);
 
   // Generate AI cards for active preset
-  const generateCards = useCallback(async (forceRegenerate = false): Promise<Card[]> => {
+  // Can optionally receive variant/context to use immediately (before state updates)
+  const generateCards = useCallback(async (
+    forceRegenerate = false,
+    overrideVariant?: InsightVariant,
+    overrideContext?: string
+  ): Promise<Card[]> => {
     if (!activePreset) return [];
     
-    const { variant, context } = activePreset.config.insight;
+    // Use overrides if provided, otherwise fall back to current config
+    const variant = overrideVariant ?? activePreset.config.insight.variant;
+    const context = overrideContext ?? activePreset.config.insight.context;
+    
     if (variant === 'general' || !context) {
       toast.error('Select an industry or region first');
       return [];
     }
     
-    // Check cache
-    if (!forceRegenerate && activePreset.generatedCards?.length) {
+    // Check cache only if not using overrides
+    if (!forceRegenerate && !overrideVariant && activePreset.generatedCards?.length) {
       return activePreset.generatedCards;
     }
     
