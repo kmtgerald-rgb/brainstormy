@@ -27,7 +27,7 @@ export function IdeaBoard({ ideas, onDelete }: IdeaBoardProps) {
       <div className="text-center py-20 max-w-md mx-auto">
         <h3 className="font-serif text-2xl mb-3">Your ideas will appear here.</h3>
         <p className="text-muted-foreground">
-          Shuffle some cards and hit TWIST to capture your first idea.
+          Shuffle some cards and capture your first idea below the grid.
         </p>
       </div>
     );

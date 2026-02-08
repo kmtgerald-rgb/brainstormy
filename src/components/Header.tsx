@@ -1,4 +1,5 @@
 import { ControlPanel } from './ControlPanel';
+import { ThemeToggle } from './ThemeToggle';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
 
 interface HeaderProps {
@@ -39,20 +40,23 @@ export function Header({
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-2xl tracking-tight">Brainstormy</h1>
 
-          <ControlPanel
-            isModeratorMode={isModeratorMode}
-            onToggleModeratorMode={onToggleModeratorMode}
-            onSetFocus={onSetFocus}
-            gameMode={gameMode}
-            gameSettings={gameSettings}
-            availableGameModes={availableGameModes}
-            isGameRunning={isGameRunning}
-            onGameModeChange={onGameModeChange}
-            onGameSettingsChange={onGameSettingsChange}
-            onExportPresets={onExportPresets}
-            onImportPresets={onImportPresets}
-            onReset={onResetDeck}
-          />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <ControlPanel
+              isModeratorMode={isModeratorMode}
+              onToggleModeratorMode={onToggleModeratorMode}
+              onSetFocus={onSetFocus}
+              gameMode={gameMode}
+              gameSettings={gameSettings}
+              availableGameModes={availableGameModes}
+              isGameRunning={isGameRunning}
+              onGameModeChange={onGameModeChange}
+              onGameSettingsChange={onGameSettingsChange}
+              onExportPresets={onExportPresets}
+              onImportPresets={onImportPresets}
+              onReset={onResetDeck}
+            />
+          </div>
         </div>
       </div>
     </header>
