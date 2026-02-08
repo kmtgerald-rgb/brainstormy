@@ -13,6 +13,7 @@ import { useDeckManager } from '@/hooks/useDeckManager';
 import { useModerator } from '@/hooks/useModerator';
 import { useGameMode } from '@/hooks/useGameMode';
 import { useAISuggestion } from '@/hooks/useAISuggestion';
+import { useCardRegeneration } from '@/hooks/useCardRegeneration';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { FilterMode } from '@/hooks/useCards';
 
@@ -50,6 +51,9 @@ const Index = () => {
 
   // Game mode hook
   const gameMode = useGameMode();
+
+  // Card regeneration hook
+  const { isRegenerating, regenerateCard } = useCardRegeneration();
 
   // Local saved ideas state
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>(() => {
@@ -142,6 +146,13 @@ const Index = () => {
   const handleEditCard = (card: Card) => {
     setEditingCard(card);
   };
+
+  const handleRegenerateCard = useCallback(async (category: Category) => {
+    const result = await regenerateCard(category, allCardsForShuffle, localProblemStatement);
+    if (result) {
+      setSelectedCards((prev) => ({ ...prev, [category]: result }));
+    }
+  }, [regenerateCard, allCardsForShuffle, localProblemStatement]);
 
   const handleSaveCardEdit = (cardId: string, newText: string) => {
     updateCardText(cardId, newText);
@@ -338,6 +349,11 @@ const Index = () => {
             isShuffling={isShuffling}
             problemStatement={localProblemStatement}
             onEditProblem={() => setIsFocusEditorOpen(true)}
+            isModeratorMode={isModeratorMode}
+            hasOverride={hasOverride}
+            onEditCard={handleEditCard}
+            onRegenerateCard={handleRegenerateCard}
+            isRegenerating={isRegenerating}
             onSaveIdea={handleSaveIdea}
             onAISuggest={handleGetSuggestion}
             aiSuggestion={suggestion}

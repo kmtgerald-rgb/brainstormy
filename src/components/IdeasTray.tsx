@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { SavedIdea } from '@/hooks/useCards';
 import { IdeaBoard } from './IdeaBoard';
+import { IdeasExport } from './IdeasExport';
 import { cn } from '@/lib/utils';
 
 interface IdeasTrayProps {
@@ -25,47 +26,54 @@ export function IdeasTray({ ideas, onDelete }: IdeasTrayProps) {
   return (
     <div className="border-t border-border">
       {/* Tray Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={cn(
-          'w-full py-4 px-4 flex items-center justify-center gap-3',
-          'font-mono text-xs uppercase tracking-wider',
-          'text-muted-foreground hover:text-foreground transition-colors',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-        )}
-      >
-        {isExpanded ? (
-          <ChevronDown className="w-4 h-4" />
-        ) : (
-          <ChevronUp className="w-4 h-4" />
-        )}
-        
-        <span className="flex items-center gap-3">
-          {/* User Ideas */}
-          <span className="flex items-center gap-1.5">
-            Your Ideas
-            {userIdeasCount > 0 && (
-              <span className="px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
-                {userIdeasCount}
-              </span>
+      <div className="flex items-center justify-center">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={cn(
+            'flex-1 py-4 px-4 flex items-center justify-center gap-3',
+            'font-mono text-xs uppercase tracking-wider',
+            'text-muted-foreground hover:text-foreground transition-colors',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+          )}
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronUp className="w-4 h-4" />
+          )}
+          
+          <span className="flex items-center gap-3">
+            {/* User Ideas */}
+            <span className="flex items-center gap-1.5">
+              Your Ideas
+              {userIdeasCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] bg-foreground text-background rounded-full">
+                  {userIdeasCount}
+                </span>
+              )}
+            </span>
+
+            {/* AI Sparks - only show if there are any */}
+            {aiSparksCount > 0 && (
+              <>
+                <span className="text-muted-foreground/50">|</span>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  AI Sparks
+                  <span className="px-1.5 py-0.5 text-[10px] bg-primary text-primary-foreground rounded-full">
+                    {aiSparksCount}
+                  </span>
+                </span>
+              </>
             )}
           </span>
+        </button>
 
-          {/* AI Sparks - only show if there are any */}
-          {aiSparksCount > 0 && (
-            <>
-              <span className="text-muted-foreground/50">|</span>
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-primary" />
-                AI Sparks
-                <span className="px-1.5 py-0.5 text-[10px] bg-primary text-primary-foreground rounded-full">
-                  {aiSparksCount}
-                </span>
-              </span>
-            </>
-          )}
-        </span>
-      </button>
+        {/* Export button - sits beside the tray header */}
+        <div className="pr-4">
+          <IdeasExport ideas={ideas} />
+        </div>
+      </div>
 
       {/* Expandable Content */}
       <AnimatePresence>

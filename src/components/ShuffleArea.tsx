@@ -17,6 +17,13 @@ interface ShuffleAreaProps {
   isShuffling: boolean;
   problemStatement?: string | null;
   onEditProblem?: () => void;
+  // Moderator mode props
+  isModeratorMode?: boolean;
+  hasOverride?: (cardId: string) => boolean;
+  onEditCard?: (card: Card) => void;
+  // Card regeneration props
+  onRegenerateCard?: (category: Category) => void;
+  isRegenerating?: Record<Category, boolean>;
   // Inline idea capture props
   onSaveIdea?: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
   onAISuggest?: () => void;
@@ -57,6 +64,14 @@ export function ShuffleArea({
   isShuffling,
   problemStatement,
   onEditProblem,
+  // Moderator mode
+  isModeratorMode = false,
+  hasOverride,
+  onEditCard,
+  // Card regeneration
+  onRegenerateCard,
+  isRegenerating,
+  // Idea capture
   onSaveIdea,
   onAISuggest,
   aiSuggestion,
@@ -175,10 +190,15 @@ export function ShuffleArea({
                   size="lg"
                   animate={true}
                   delay={index * 0.08}
-                  flippable={true}
+                  flippable={!isModeratorMode}
                   explanation={getState(selectedCards[category]!.id).text}
                   explanationLoading={getState(selectedCards[category]!.id).loading}
                   onFlip={() => handleCardFlip(selectedCards[category]!)}
+                  isModeratorMode={isModeratorMode}
+                  hasOverride={hasOverride ? hasOverride(selectedCards[category]!.id) : false}
+                  onEdit={onEditCard ? () => onEditCard(selectedCards[category]!) : undefined}
+                  onRegenerate={onRegenerateCard ? () => onRegenerateCard(category) : undefined}
+                  isRegenerating={isRegenerating ? isRegenerating[category] : false}
                 />
               ) : (
                 <div

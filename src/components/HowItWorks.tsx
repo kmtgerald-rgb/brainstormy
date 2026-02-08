@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Shuffle, Lightbulb, Users, Timer, Target, Trophy } from 'lucide-react';
+import { ChevronDown, ChevronUp, Shuffle, Lightbulb, Timer, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -55,8 +55,9 @@ export function HowItWorks() {
                   <li>Set your <strong>focus</strong> (or go free-form)</li>
                   <li>Hit <strong>Shuffle</strong> to draw four random cards</li>
                   <li>Find a connection — don't judge yet, just combine</li>
-                  <li>Name and describe your idea inline, or let <strong>AI Fill</strong></li>
+                  <li>Name and describe your idea inline, or let <strong>AI Fill</strong> suggest one</li>
                   <li>Hit <strong>Capture</strong> to save your spark</li>
+                  <li>Flip any card to see <strong>Why It Matters</strong></li>
                   <li>Repeat until you've exhausted the unexpected</li>
                 </ol>
               </div>
@@ -86,26 +87,7 @@ export function HowItWorks() {
                       <span className="text-muted-foreground"> — Hit a specific idea count goal</span>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Trophy className="w-3.5 h-3.5 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <span className="font-medium">Competition</span>
-                      <span className="text-muted-foreground"> — Team scoring with live leaderboard</span>
-                    </div>
-                  </div>
                 </div>
-              </div>
-
-              {/* Collaborative */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5" />
-                  Collaborative Mode
-                </h4>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  Create or join a session to brainstorm together in real-time. 
-                  Share a session code, and all participants see the same cards and ideas.
-                </p>
               </div>
             </div>
           </motion.div>
