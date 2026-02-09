@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('brainstormy-theme') === 'dark' ||
-      (!localStorage.getItem('brainstormy-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return localStorage.getItem('brainstormy-theme') === 'dark';
   });
 
   useEffect(() => {
