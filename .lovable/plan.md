@@ -1,91 +1,62 @@
 
-## Implementation: Inline Deck Switchers
 
-### Overview
-Add subtle, inline deck variant switchers directly below the Insight and Catalyst card columns on the main canvas, replacing the menu-dependent flow.
+# Session Focus Types
 
-### New Component: `src/components/DeckSwitcher.tsx`
+## Problem
+The current "Session Focus" always refines input into a "How Might We" problem statement. This is restrictive -- brainstorming sessions don't always aim at solving a problem. Sometimes teams want to generate content ideas, campaign concepts, social posts, or other creative outputs.
 
-A compact popover-based switcher with:
-- **Trigger**: Small monospace label with chevron (e.g., "Human Truth ▾")
-- **Popover content**:
-  - Radio options for variants
-  - For Industry/Region: inline text input + Generate button
-  - Loading state during generation
-  - Success indicator when cards are ready
+## Solution
+Introduce a **Focus Type** selector in the `ProblemStatementEditor` dialog that lets users choose what kind of output the session targets. The AI refinement prompt and the Idea Capture labels will adapt accordingly.
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│  Insight       Asset         Catalyst       Random             │
-│  ┌────────┐    ┌────────┐    ┌────────┐    ┌────────┐        │
-│  │  Card  │    │  Card  │    │  Card  │    │  Card  │        │
-│  └────────┘    └────────┘    └────────┘    └────────┘        │
-│  ▾ Human       (no switch)   ▾ Technology   (no switch)       │
-│    Truth                                                       │
-└────────────────────────────────────────────────────────────────┘
-```
+## Focus Types
 
-### Component Props
-```typescript
-interface DeckSwitcherProps {
-  type: 'insight' | 'catalyst';
-  insightVariant?: InsightVariant;
-  insightContext?: string;
-  catalystVariant?: TechVariant;
-  hasGeneratedCards?: boolean;
-  isGenerating?: boolean;
-  onInsightChange?: (variant: InsightVariant, context?: string) => void;
-  onCatalystChange?: (variant: TechVariant) => void;
-  onGenerate?: () => void;
-}
-```
+| Type | Label | AI Refine Prompt Style | Idea Capture Placeholder |
+|------|-------|----------------------|--------------------------|
+| `hmw` | How Might We | "How Might We..." problem framing (current default) | "Name this combination..." |
+| `campaign` | Campaign Brief | "Generate a campaign direction for..." | "Name this campaign..." |
+| `content` | Content Idea | "Frame a content concept around..." | "Name this content piece..." |
+| `product` | Product / Feature | "Define a product opportunity for..." | "Name this product idea..." |
+| `social` | Social Post | "Craft a social-first concept for..." | "Name this post concept..." |
+| `open` | Open / Freeform | No AI reframing -- user types freely | "Name this idea..." |
 
-### Insight Switcher Flow
-1. Click "▾ Human Truth" trigger
-2. Popover opens with 3 radio options:
-   - Human Truth (default static deck)
-   - Industry Insight (requires input)
-   - Regional Insight (requires input)
-3. If Industry/Region selected:
-   - Text input appears with placeholder
-   - "Generate" button (disabled until text entered)
-4. Click Generate → loading state → auto-close on success
-5. Trigger label updates to show context (e.g., "▾ Fintech Insights")
+## Changes
 
-### Catalyst Switcher Flow
-1. Click "▾ Technology" trigger
-2. Popover opens with 3 radio options:
-   - Technology
-   - Content Format
-   - Channel
-3. Select option → instant switch (no generation needed)
-4. Popover auto-closes, label updates
+### 1. Data: Focus type definitions
+**New file: `src/data/focusTypes.ts`**
+- Export a `FocusType` union type and a `FOCUS_TYPES` array with label, description, AI system prompt snippet, and placeholder strings for each type.
 
-### Files to Modify
+### 2. Hook: `useModerator.ts`
+- Add `focusType` state (persisted to localStorage, default `'hmw'`).
+- Expose `setFocusType` and `focusType` from the hook.
+- Include `focusType` in `resetProblemStatement`.
 
-**`src/components/ShuffleArea.tsx`**
-- Accept new deck management props
-- Wrap each card column in a flex container
-- Add DeckSwitcher below Insight (index 0) and Tech (index 2) cards
-- Position switchers with subtle styling
+### 3. Component: `ProblemStatementEditor.tsx`
+- Add a row of selectable chips/radio buttons at the top for choosing the focus type.
+- Pass the selected type to the `refine-problem-statement` edge function.
+- Update the "Refine with AI" button label contextually (e.g., "Refine as Campaign Brief").
+- For `open` type, hide the AI refine button entirely (user writes directly).
 
-**`src/pages/Index.tsx`**
-- Pass deck management props to ShuffleArea:
-  - `activePreset` config values
-  - `setInsightVariant`, `setCatalystVariant`
-  - `generateCards`, `isGenerating`
+### 4. Edge function: `refine-problem-statement/index.ts`
+- Accept an optional `focusType` field in the request body.
+- Switch the system prompt based on the type (HMW, campaign brief, content concept, etc.).
+- Default to HMW if no type is provided (backward compatible).
 
-### Visual Design
-- Trigger: `font-mono text-[10px] uppercase tracking-wider text-muted-foreground`
-- Hover: subtle background, category accent color
-- Popover: matches card aesthetic (off-white, minimal shadow)
-- Generate button: small, primary color when enabled
-- Loading: spinner icon, disabled state
-- Success: small sparkles icon + card count badge
+### 5. Component: `ProblemStatementBanner.tsx`
+- Show a small badge/label indicating the active focus type (e.g., "Campaign Brief" instead of just "Session Focus").
 
-### Technical Details
-1. Use Radix Popover for the dropdown
-2. RadioGroup for variant selection
-3. Input with debounced validation
-4. Generate button triggers `onGenerate()` after `onInsightChange(variant, context)`
-5. Auto-close popover on successful generation (listen to `hasGeneratedCards` change)
+### 6. Component: `InlineIdeaCapture.tsx`
+- Accept an optional `focusType` prop.
+- Swap the title placeholder based on the type (from `FOCUS_TYPES` data).
+
+### 7. Edge function: `suggest-idea/index.ts`
+- Accept an optional `focusType` field.
+- Adjust the AI prompt so it generates ideas matching the session type (e.g., a tweet concept vs. a product idea).
+
+### 8. Wiring: `Index.tsx`
+- Pass `focusType` from `useModerator` through to `ShuffleArea`, `InlineIdeaCapture`, `ProblemStatementBanner`, and the AI suggestion calls.
+
+## Technical Notes
+- All state stays in localStorage via `useModerator` -- no database changes needed.
+- Edge function changes are backward-compatible (focusType is optional, defaults to HMW).
+- The focus type chips use the same editorial styling as DeckSwitcher (mono labels, minimal design).
+
