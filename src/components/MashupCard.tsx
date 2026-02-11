@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCcw, Pencil, X, Info, ArrowLeftRight, Sparkles, Loader2 } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
@@ -65,6 +65,26 @@ export function MashupCard({
   isRegenerating = false,
 }: MashupCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [scale, setScale] = useState(1);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const recalcScale = useCallback(() => {
+    const content = contentRef.current;
+    const container = containerRef.current;
+    if (!content || !container) return;
+    const containerH = container.clientHeight;
+    const contentH = content.scrollHeight;
+    if (contentH > containerH) {
+      setScale(Math.max(0.65, containerH / contentH));
+    } else {
+      setScale(1);
+    }
+  }, []);
+
+  useEffect(() => {
+    recalcScale();
+  }, [card.text, size, recalcScale]);
 
   const sizeClasses = {
     sm: 'p-4 min-h-[100px]',
@@ -123,9 +143,9 @@ export function MashupCard({
   );
 
   const FrontFace = (
-    <div className={cn(baseCardClasses, 'absolute inset-0')}>
+    <div ref={containerRef} className={cn(baseCardClasses, 'absolute inset-0 overflow-hidden')}>
       {/* Top-right actions */}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
         {card.isGenerated && (
           <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-primary/10 text-primary rounded">
             AI
@@ -184,15 +204,17 @@ export function MashupCard({
         )}
       </div>
       
-      {showCategory && (
-        <span className={cn(
-          'font-mono text-[10px] uppercase tracking-wider mb-3 block',
-          categoryTextStyles[card.category]
-        )}>
-          {categoryShortLabels[card.category]}
-        </span>
-      )}
-      <p className={cn('font-serif', textSizeClass)}>{card.text}</p>
+      <div ref={contentRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: scale < 1 ? `${100 / scale}%` : '100%' }}>
+        {showCategory && (
+          <span className={cn(
+            'font-mono text-[10px] uppercase tracking-wider mb-3 block',
+            categoryTextStyles[card.category]
+          )}>
+            {categoryShortLabels[card.category]}
+          </span>
+        )}
+        <p className={cn('font-serif', textSizeClass)}>{card.text}</p>
+      </div>
     </div>
   );
 
