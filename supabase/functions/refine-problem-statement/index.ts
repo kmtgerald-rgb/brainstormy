@@ -6,15 +6,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const focusTypePrompts: Record<string, string> = {
+  hmw: `You are a strategic innovation consultant. Transform raw brainstorming context into a clear, actionable problem statement.
+
+Rules:
+- Output ONLY the problem statement, nothing else
+- Use "How Might We" format when appropriate
+- Keep it to 1-2 sentences maximum
+- Make it inspiring and open-ended to encourage creative thinking
+- Include a measurable goal or target if one is provided
+- Be concise but capture the essence of the challenge`,
+
+  campaign: `You are a senior creative director at a top agency. Transform raw brainstorming context into a sharp campaign brief direction.
+
+Rules:
+- Output ONLY the campaign direction statement, nothing else
+- Frame it as a campaign objective with a target audience and desired outcome
+- Keep it to 1-2 sentences maximum
+- Make it bold, distinctive, and actionable
+- Focus on the strategic tension or cultural insight that drives the campaign`,
+
+  content: `You are a content strategist at a leading media company. Transform raw brainstorming context into a compelling content concept.
+
+Rules:
+- Output ONLY the content concept, nothing else
+- Frame it as a content piece with a clear angle and audience
+- Keep it to 1-2 sentences maximum
+- Make it specific enough to act on but open enough for creative exploration
+- Suggest the format implicitly (article, video, series, etc.)`,
+
+  product: `You are a product strategist at a top tech company. Transform raw brainstorming context into a clear product opportunity statement.
+
+Rules:
+- Output ONLY the product opportunity statement, nothing else
+- Frame it as a user need paired with a solution direction
+- Keep it to 1-2 sentences maximum
+- Make it specific about who benefits and what changes for them
+- Focus on the value proposition, not the implementation`,
+
+  social: `You are a social media strategist known for viral campaigns. Transform raw brainstorming context into a social-first content concept.
+
+Rules:
+- Output ONLY the social concept, nothing else
+- Frame it as a shareable, platform-native idea
+- Keep it to 1-2 sentences maximum
+- Make it punchy, culturally relevant, and scroll-stopping
+- Hint at the format (reel, thread, meme, challenge, etc.)`,
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { context } = await req.json();
+    const { context, focusType } = await req.json();
 
-    // Input validation
     const minLength = 10;
     const maxLength = 2000;
 
@@ -44,7 +91,9 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log('Refining problem statement for context:', context.substring(0, 100));
+    const systemPrompt = focusTypePrompts[focusType] || focusTypePrompts['hmw'];
+
+    console.log('Refining problem statement for context:', context.substring(0, 100), 'focusType:', focusType || 'hmw');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -55,21 +104,10 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: `You are a strategic innovation consultant. Transform raw brainstorming context into a clear, actionable problem statement.
-
-Rules:
-- Output ONLY the problem statement, nothing else
-- Use "How Might We" format when appropriate
-- Keep it to 1-2 sentences maximum
-- Make it inspiring and open-ended to encourage creative thinking
-- Include a measurable goal or target if one is provided
-- Be concise but capture the essence of the challenge`
-          },
+          { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Transform this brainstorming context into a refined problem statement:\n\n${context}`
+            content: `Transform this brainstorming context into a refined statement:\n\n${context}`
           }
         ],
         max_tokens: 150,

@@ -13,7 +13,8 @@ export function useAISuggestion() {
 
   const getSuggestion = async (
     selectedCards: Record<Category, Card | null>,
-    problemStatement?: string | null
+    problemStatement?: string | null,
+    focusType?: string
   ) => {
     const { insight, asset, tech, random } = selectedCards;
     
@@ -42,6 +43,7 @@ export function useAISuggestion() {
               random: random.text,
             },
             problemStatement: problemStatement || undefined,
+            focusType: focusType || undefined,
           }),
         }
       );

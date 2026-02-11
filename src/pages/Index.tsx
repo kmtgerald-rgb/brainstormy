@@ -47,6 +47,8 @@ const Index = () => {
     localProblemContext,
     localProblemStatement,
     updateLocalProblemStatement,
+    focusType,
+    setFocusType,
   } = useModerator();
 
   // Game mode hook
@@ -201,11 +203,11 @@ const Index = () => {
       // Auto-trigger AI suggestion if enabled
       if (autoAISuggest) {
         setTimeout(() => {
-          getSuggestion(newSelection, localProblemStatement);
+          getSuggestion(newSelection, localProblemStatement, focusType);
         }, 400);
       }
     }, 200);
-  }, [allCardsForShuffle, clearSuggestion, autoAISuggest, getSuggestion, localProblemStatement]);
+  }, [allCardsForShuffle, clearSuggestion, autoAISuggest, getSuggestion, localProblemStatement, focusType]);
 
   const handleAutoAISuggestChange = useCallback((enabled: boolean) => {
     setAutoAISuggest(enabled);
@@ -223,7 +225,7 @@ const Index = () => {
   };
 
   const handleGetSuggestion = () => {
-    getSuggestion(selectedCards, localProblemStatement);
+    getSuggestion(selectedCards, localProblemStatement, focusType);
   };
 
   // Derive card states
@@ -360,6 +362,7 @@ const Index = () => {
             isAILoading={isAILoading}
             autoAISuggest={autoAISuggest}
             onAutoAISuggestChange={handleAutoAISuggestChange}
+            focusType={focusType}
             // Deck switcher props
             insightVariant={deckManager.activePreset.config.insight.variant}
             insightContext={deckManager.activePreset.config.insight.context}
@@ -420,6 +423,8 @@ const Index = () => {
         onClose={() => setIsFocusEditorOpen(false)}
         currentContext={localProblemContext}
         currentStatement={localProblemStatement}
+        focusType={focusType}
+        onFocusTypeChange={setFocusType}
         onSave={async (ctx, stmt) => updateLocalProblemStatement(ctx, stmt)}
       />
 

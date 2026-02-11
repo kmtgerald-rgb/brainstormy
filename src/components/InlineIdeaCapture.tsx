@@ -4,6 +4,7 @@ import { Sparkles, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { FocusType, getFocusTypeConfig } from "@/data/focusTypes";
 
 interface InlineIdeaCaptureProps {
   onSave: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
@@ -13,6 +14,7 @@ interface InlineIdeaCaptureProps {
   isVisible: boolean;
   autoAISuggest?: boolean;
   onAutoAISuggestChange?: (enabled: boolean) => void;
+  focusType?: FocusType;
 }
 
 export function InlineIdeaCapture({
@@ -23,7 +25,9 @@ export function InlineIdeaCapture({
   isVisible,
   autoAISuggest = false,
   onAutoAISuggestChange,
+  focusType = 'hmw',
 }: InlineIdeaCaptureProps) {
+  const focusConfig = getFocusTypeConfig(focusType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -181,7 +185,7 @@ export function InlineIdeaCapture({
               >
                 <textarea
                   ref={titleRef}
-                  placeholder="Name this combination..."
+                  placeholder={focusConfig.ideaPlaceholder}
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
@@ -200,7 +204,7 @@ export function InlineIdeaCapture({
               >
                 <textarea
                   ref={descriptionRef}
-                  placeholder="How do these forces connect?"
+                  placeholder={focusConfig.descriptionPlaceholder}
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value);

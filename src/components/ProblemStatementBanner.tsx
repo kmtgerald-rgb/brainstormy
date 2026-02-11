@@ -1,19 +1,24 @@
 import { Target, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { FocusType, getFocusTypeConfig } from '@/data/focusTypes';
 
 interface ProblemStatementBannerProps {
   statement: string | null;
+  focusType?: FocusType;
   isModeratorMode?: boolean;
   onEdit?: () => void;
 }
 
 export function ProblemStatementBanner({
   statement,
+  focusType = 'hmw',
   isModeratorMode = false,
   onEdit,
 }: ProblemStatementBannerProps) {
   if (!statement) return null;
+
+  const config = getFocusTypeConfig(focusType);
 
   return (
     <motion.div
@@ -27,9 +32,16 @@ export function ProblemStatementBanner({
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-            Session Focus
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Session Focus
+            </p>
+            {focusType !== 'hmw' && (
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded-sm border border-border/50">
+                {config.label}
+              </span>
+            )}
+          </div>
           <p className="font-serif text-lg leading-relaxed text-foreground">
             {statement}
           </p>

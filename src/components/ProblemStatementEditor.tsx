@@ -5,12 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FocusType, FOCUS_TYPES, getFocusTypeConfig } from '@/data/focusTypes';
+import { cn } from '@/lib/utils';
 
 interface ProblemStatementEditorProps {
   isOpen: boolean;
   onClose: () => void;
   currentContext: string | null;
   currentStatement: string | null;
+  focusType: FocusType;
+  onFocusTypeChange: (type: FocusType) => void;
   onSave: (context: string, statement: string) => Promise<void>;
 }
 
@@ -19,12 +23,16 @@ export function ProblemStatementEditor({
   onClose,
   currentContext,
   currentStatement,
+  focusType,
+  onFocusTypeChange,
   onSave,
 }: ProblemStatementEditorProps) {
   const [context, setContext] = useState(currentContext || '');
   const [refinedStatement, setRefinedStatement] = useState(currentStatement || '');
   const [isRefining, setIsRefining] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const config = getFocusTypeConfig(focusType);
 
   const handleRefine = async () => {
     if (!context.trim()) {
@@ -35,7 +43,7 @@ export function ProblemStatementEditor({
     setIsRefining(true);
     try {
       const { data, error } = await supabase.functions.invoke('refine-problem-statement', {
-        body: { context: context.trim() },
+        body: { context: context.trim(), focusType },
       });
 
       if (error) throw error;
@@ -90,6 +98,30 @@ export function ProblemStatementEditor({
         </DialogHeader>
 
         <div className="space-y-6 pt-4">
+          {/* Focus Type Selector */}
+          <div className="space-y-2">
+            <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Focus Type
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {FOCUS_TYPES.map((ft) => (
+                <button
+                  key={ft.type}
+                  onClick={() => onFocusTypeChange(ft.type)}
+                  className={cn(
+                    'px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider rounded-sm border transition-all',
+                    focusType === ft.type
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground'
+                  )}
+                >
+                  {ft.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{config.description}</p>
+          </div>
+
           {/* Context Input */}
           <div className="space-y-2">
             <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -106,25 +138,27 @@ export function ProblemStatementEditor({
             </p>
           </div>
 
-          {/* Refine Button */}
-          <Button
-            onClick={handleRefine}
-            disabled={isRefining || !context.trim()}
-            variant="outline"
-            className="w-full gap-2 font-mono text-xs uppercase tracking-wider"
-          >
-            {isRefining ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Refining...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Refine with AI
-              </>
-            )}
-          </Button>
+          {/* Refine Button - hidden for 'open' type */}
+          {focusType !== 'open' && (
+            <Button
+              onClick={handleRefine}
+              disabled={isRefining || !context.trim()}
+              variant="outline"
+              className="w-full gap-2 font-mono text-xs uppercase tracking-wider"
+            >
+              {isRefining ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Refining...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  {config.refineLabel}
+                </>
+              )}
+            </Button>
+          )}
 
           {/* Refined Statement Preview */}
           {refinedStatement && (
@@ -136,6 +170,23 @@ export function ProblemStatementEditor({
                 <Textarea
                   value={refinedStatement}
                   onChange={(e) => setRefinedStatement(e.target.value)}
+                  className="min-h-[80px] resize-none border-0 bg-transparent p-0 font-serif text-base focus-visible:ring-0"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* For open type, show inline textarea for direct writing */}
+          {focusType === 'open' && !refinedStatement && (
+            <div className="space-y-2">
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Your Focus Statement
+              </label>
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                <Textarea
+                  value={refinedStatement}
+                  onChange={(e) => setRefinedStatement(e.target.value)}
+                  placeholder="Write your focus statement directly..."
                   className="min-h-[80px] resize-none border-0 bg-transparent p-0 font-serif text-base focus-visible:ring-0"
                 />
               </div>

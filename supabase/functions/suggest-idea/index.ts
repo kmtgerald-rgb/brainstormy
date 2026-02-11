@@ -5,6 +5,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const focusTypeInstructions: Record<string, string> = {
+  hmw: 'suggest ONE compelling product/service/campaign idea that combines all of them',
+  campaign: 'suggest ONE bold campaign concept that combines all of them into a unified marketing direction',
+  content: 'suggest ONE compelling content piece (article, video, series) that combines all of them',
+  product: 'suggest ONE product or feature idea that combines all of them into a tangible user experience',
+  social: 'suggest ONE viral social media post concept that combines all of them into a shareable moment',
+  open: 'suggest ONE creative idea that combines all of them in an unexpected way',
+};
+
+const focusTypeOutputHints: Record<string, { titleHint: string; descHint: string }> = {
+  hmw: { titleHint: 'A catchy name for the idea (max 6 words)', descHint: 'A 2-3 sentence pitch explaining the concept' },
+  campaign: { titleHint: 'A campaign name (max 6 words)', descHint: 'A 2-3 sentence campaign brief' },
+  content: { titleHint: 'A headline or title (max 6 words)', descHint: 'A 2-3 sentence content synopsis' },
+  product: { titleHint: 'A product/feature name (max 6 words)', descHint: 'A 2-3 sentence product pitch' },
+  social: { titleHint: 'A post hook or concept name (max 6 words)', descHint: 'A 2-3 sentence post concept description' },
+  open: { titleHint: 'A catchy name for the idea (max 6 words)', descHint: 'A 2-3 sentence description of the idea' },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -12,9 +30,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { cards, problemStatement } = body;
+    const { cards, problemStatement, focusType } = body;
     
-    // Input validation
     if (!cards || typeof cards !== 'object') {
       return new Response(
         JSON.stringify({ error: 'Invalid request format' }),
@@ -55,11 +72,15 @@ serve(async (req) => {
 
     const { insight, asset, tech, random } = cards;
 
+    const ft = focusType || 'hmw';
+    const instruction = focusTypeInstructions[ft] || focusTypeInstructions['hmw'];
+    const hints = focusTypeOutputHints[ft] || focusTypeOutputHints['hmw'];
+
     const focusContext = problemStatement 
       ? `\n\nIMPORTANT SESSION FOCUS: "${problemStatement}"\nYour idea MUST directly address this focus/problem statement. Make sure the suggested concept is relevant and applicable to this specific challenge.\n`
       : '';
 
-    const prompt = `You are a creative innovation consultant. Given these four elements, suggest ONE compelling product/service/campaign idea that combines all of them.${focusContext}
+    const prompt = `You are a creative innovation consultant. Given these four elements, ${instruction}.${focusContext}
 
 Consumer Insight: "${insight}"
 Existing Asset: "${asset}"
@@ -67,8 +88,8 @@ New Technology: "${tech}"
 Creative Twist: "${random}"
 
 Respond with a JSON object containing:
-- title: A catchy name for the idea (max 6 words)
-- description: A 2-3 sentence pitch explaining the concept${problemStatement ? ' that addresses the session focus' : ''}
+- title: ${hints.titleHint}
+- description: ${hints.descHint}${problemStatement ? ' that addresses the session focus' : ''}
 
 Be creative, practical, and exciting. Focus on how these elements work together synergistically.`;
 
@@ -108,10 +129,8 @@ Be creative, practical, and exciting. Focus on how these elements work together 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    // Parse the JSON from the response
     let suggestion;
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         suggestion = JSON.parse(jsonMatch[0]);
@@ -120,7 +139,6 @@ Be creative, practical, and exciting. Focus on how these elements work together 
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      // Fallback: create a simple suggestion from the text
       suggestion = {
         title: "AI Generated Idea",
         description: content.slice(0, 200),
