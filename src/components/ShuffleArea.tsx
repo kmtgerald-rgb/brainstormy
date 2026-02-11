@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Pencil, Layers } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { InsightVariant, TechVariant } from '@/data/deckVariants';
+import { FocusType } from '@/data/focusTypes';
 import { MashupCard } from './MashupCard';
 import { InlineIdeaCapture } from './InlineIdeaCapture';
 import { DeckSwitcher } from './DeckSwitcher';
@@ -31,6 +32,7 @@ interface ShuffleAreaProps {
   isAILoading?: boolean;
   autoAISuggest?: boolean;
   onAutoAISuggestChange?: (enabled: boolean) => void;
+  focusType?: FocusType;
   // Deck switcher props
   insightVariant?: InsightVariant;
   insightContext?: string;
@@ -78,6 +80,7 @@ export function ShuffleArea({
   isAILoading = false,
   autoAISuggest = false,
   onAutoAISuggestChange,
+  focusType = 'hmw',
   // Deck switcher props
   insightVariant = 'general',
   insightContext,
@@ -251,6 +254,7 @@ export function ShuffleArea({
           isAILoading={isAILoading}
           autoAISuggest={autoAISuggest}
           onAutoAISuggestChange={onAutoAISuggestChange}
+          focusType={focusType}
         />
       )}
     </div>

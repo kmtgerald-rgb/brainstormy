@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
+import { FocusType } from '@/data/focusTypes';
 
 const MODERATOR_KEY = 'mashup-moderator-mode';
 const CARD_OVERRIDES_KEY = 'mashup-card-overrides';
 const PROBLEM_CONTEXT_KEY = 'mashup-local-problem-context';
 const PROBLEM_STATEMENT_KEY = 'mashup-local-problem-statement';
+const FOCUS_TYPE_KEY = 'mashup-focus-type';
 
 export interface CardOverride {
   id: string;
@@ -28,6 +30,15 @@ export function useModerator() {
   const [localProblemStatement, setLocalProblemStatement] = useState<string | null>(() => {
     return localStorage.getItem(PROBLEM_STATEMENT_KEY);
   });
+
+  const [focusType, setFocusTypeState] = useState<FocusType>(() => {
+    return (localStorage.getItem(FOCUS_TYPE_KEY) as FocusType) || 'hmw';
+  });
+
+  const setFocusType = useCallback((type: FocusType) => {
+    localStorage.setItem(FOCUS_TYPE_KEY, type);
+    setFocusTypeState(type);
+  }, []);
 
   const toggleModeratorMode = useCallback(() => {
     setIsModeratorMode((prev) => {
@@ -62,8 +73,10 @@ export function useModerator() {
   const resetProblemStatement = useCallback(() => {
     localStorage.removeItem(PROBLEM_CONTEXT_KEY);
     localStorage.removeItem(PROBLEM_STATEMENT_KEY);
+    localStorage.removeItem(FOCUS_TYPE_KEY);
     setLocalProblemContext(null);
     setLocalProblemStatement(null);
+    setFocusTypeState('hmw');
   }, []);
 
   const getCardText = useCallback(
@@ -108,5 +121,7 @@ export function useModerator() {
     localProblemContext,
     localProblemStatement,
     updateLocalProblemStatement,
+    focusType,
+    setFocusType,
   };
 }
