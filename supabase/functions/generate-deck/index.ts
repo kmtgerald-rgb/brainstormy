@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, context } = await req.json();
+    const { type, context, language } = await req.json();
 
     if (!type || !context) {
       return new Response(
@@ -51,6 +51,12 @@ Format: Return ONLY a JSON array of 20 strings, nothing else. Example:
         JSON.stringify({ error: 'Invalid type. Must be "industry" or "region"' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    const isZhHK = language === 'zh-HK';
+    if (isZhHK) {
+      systemPrompt += `\n\nRespond in Hong Kong Traditional Chinese (繁體中文 · 香港) using Apple's product copy style: confident, minimal, written register (書面語, not 口語). Use 的/是/這, never 嘅/係/呢. Short declarative phrases. No exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard.`;
+      userPrompt += `\n\nIMPORTANT: All 20 strings in the JSON array MUST be in Traditional Chinese (繁體中文 · 香港) using Apple-style 書面語. Use 的/是/這, never 嘅/係/呢.`;
     }
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
