@@ -1,62 +1,53 @@
 
+The user wants two things:
+1. Remove the regenerate (sparkle) button from the card front — they don't want inline editing affordances on the card itself.
+2. Restore the flip-to-explain functionality, which is currently broken.
 
-# Session Focus Types
+Let me check the current MashupCard logic. Looking at `handleCardClick`:
+```
+if (flippable) handleFlip(e);
+else if (isModeratorMode && onEdit) onEdit();
+else if (onClick) onClick();
+```
 
-## Problem
-The current "Session Focus" always refines input into a "How Might We" problem statement. This is restrictive -- brainstorming sessions don't always aim at solving a problem. Sometimes teams want to generate content ideas, campaign concepts, social posts, or other creative outputs.
+And `handleFlip`:
+```
+if (!flippable) return;
+e.stopPropagation();
+if (!isFlipped && onFlip) onFlip();
+setIsFlipped(!isFlipped);
+```
 
-## Solution
-Introduce a **Focus Type** selector in the `ProblemStatementEditor` dialog that lets users choose what kind of output the session targets. The AI refinement prompt and the Idea Capture labels will adapt accordingly.
+That logic looks correct. So why is flip broken? Let me check ShuffleArea: `flippable={!isModeratorMode}` — so flippable is true when not in moderator mode. Should work.
 
-## Focus Types
+Also need to check the build error: `useGameMode.ts(37,27): NodeJS namespace not found`. Easy fix: use `ReturnType<typeof setInterval>` instead of `NodeJS.Timeout`.
 
-| Type | Label | AI Refine Prompt Style | Idea Capture Placeholder |
-|------|-------|----------------------|--------------------------|
-| `hmw` | How Might We | "How Might We..." problem framing (current default) | "Name this combination..." |
-| `campaign` | Campaign Brief | "Generate a campaign direction for..." | "Name this campaign..." |
-| `content` | Content Idea | "Frame a content concept around..." | "Name this content piece..." |
-| `product` | Product / Feature | "Define a product opportunity for..." | "Name this product idea..." |
-| `social` | Social Post | "Craft a social-first concept for..." | "Name this post concept..." |
-| `open` | Open / Freeform | No AI reframing -- user types freely | "Name this idea..." |
+Likely cause of broken flip: the new regenerate button's onRegenerate callback was added, and possibly the onClick on the card div is being intercepted, OR — more likely — the parent `motion.div` wrapper or the card structure changed. Actually, looking closer: the `onClick={handleCardClick}` is on an inner div, but the outer `motion.div` from animate=true wraps everything. That should still bubble.
 
-## Changes
+Wait — checking front face: the regenerate button + actions are in `absolute top-3 right-3 z-10`. Clicking on card body should still trigger handleCardClick. 
 
-### 1. Data: Focus type definitions
-**New file: `src/data/focusTypes.ts`**
-- Export a `FocusType` union type and a `FOCUS_TYPES` array with label, description, AI system prompt snippet, and placeholder strings for each type.
+Possible issue: `pointer-events`. The contentRef inner div is scaled with transform. The container has `overflow-hidden`. Should still receive clicks.
 
-### 2. Hook: `useModerator.ts`
-- Add `focusType` state (persisted to localStorage, default `'hmw'`).
-- Expose `setFocusType` and `focusType` from the hook.
-- Include `focusType` in `resetProblemStatement`.
+Let me actually just check — the user says "flip and explain cannot be triggered". Most likely cause: the onClick is on the inner rotation div, but events from FrontFace (which is `absolute inset-0`) should bubble up through the rotation div. That should work.
 
-### 3. Component: `ProblemStatementEditor.tsx`
-- Add a row of selectable chips/radio buttons at the top for choosing the focus type.
-- Pass the selected type to the `refine-problem-statement` edge function.
-- Update the "Refine with AI" button label contextually (e.g., "Refine as Campaign Brief").
-- For `open` type, hide the AI refine button entirely (user writes directly).
+Hmm, one theory: the regenerate button has `disabled={isRegenerating}` but no e.stopPropagation when not regenerating — wait it does have stopPropagation. OK.
 
-### 4. Edge function: `refine-problem-statement/index.ts`
-- Accept an optional `focusType` field in the request body.
-- Switch the system prompt based on the type (HMW, campaign brief, content concept, etc.).
-- Default to HMW if no type is provided (backward compatible).
+Another theory: the previous task summary mentioned "In moderator mode, cards are clickable for direct editing" — but the user says flip is broken in normal (non-moderator) mode. Let me re-examine. In non-moderator mode with onRegenerate passed: handleCardClick → flippable=true → handleFlip → setIsFlipped(true). Should work.
 
-### 5. Component: `ProblemStatementBanner.tsx`
-- Show a small badge/label indicating the active focus type (e.g., "Campaign Brief" instead of just "Session Focus").
+Maybe the issue is visual: the card flips but the explanation doesn't show because of some other issue. Or perhaps Index.tsx is passing isModeratorMode=true unintentionally? Without seeing Index.tsx I can't be sure, but the simplest robust fix is:
 
-### 6. Component: `InlineIdeaCapture.tsx`
-- Accept an optional `focusType` prop.
-- Swap the title placeholder based on the type (from `FOCUS_TYPES` data).
+**Plan:**
+1. Remove the `onRegenerate` button from `MashupCard`'s front face (and its props), plus remove `isModeratorMode`/`onEdit`/`hasOverride` rendering of pencil icon — keep card pure display + flip.
+2. Remove regenerate wiring from `ShuffleArea` and `Index.tsx` (don't pass `onRegenerateCard`, `isRegenerating`, `isModeratorMode`, `onEditCard`, `hasOverride` to MashupCard).
+3. Card-editing access stays available in the Browse Decks drawer (already exists) and ProblemStatementEditor — moderator editing on the canvas itself is removed per user request.
+4. Fix `useGameMode.ts` build error: replace `NodeJS.Timeout` with `ReturnType<typeof setInterval>`.
 
-### 7. Edge function: `suggest-idea/index.ts`
-- Accept an optional `focusType` field.
-- Adjust the AI prompt so it generates ideas matching the session type (e.g., a tweet concept vs. a product idea).
+Result: Cards on the canvas are click-to-flip only. Clean, no edit/regenerate icons. Flip + AI explanation works reliably.
 
-### 8. Wiring: `Index.tsx`
-- Pass `focusType` from `useModerator` through to `ShuffleArea`, `InlineIdeaCapture`, `ProblemStatementBanner`, and the AI suggestion calls.
+## Files to change
+- `src/components/MashupCard.tsx` — drop edit/regenerate UI; simplify click handler to flip-only (when `flippable`).
+- `src/components/ShuffleArea.tsx` — stop passing edit/regenerate props.
+- `src/pages/Index.tsx` — stop passing `onRegenerateCard`, `isRegenerating`, `isModeratorMode`, `onEditCard`, `hasOverride` to ShuffleArea.
+- `src/hooks/useGameMode.ts` — fix `NodeJS.Timeout` type to `ReturnType<typeof setInterval>`.
 
-## Technical Notes
-- All state stays in localStorage via `useModerator` -- no database changes needed.
-- Edge function changes are backward-compatible (focusType is optional, defaults to HMW).
-- The focus type chips use the same editorial styling as DeckSwitcher (mono labels, minimal design).
-
+No prop interface changes elsewhere; useCardRegeneration hook stays available for future use but is unused on the canvas.
