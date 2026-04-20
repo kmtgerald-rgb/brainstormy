@@ -1,53 +1,92 @@
 
-The user wants two things:
-1. Remove the regenerate (sparkle) button from the card front — they don't want inline editing affordances on the card itself.
-2. Restore the flip-to-explain functionality, which is currently broken.
+## CSV Import/Export for Expert Mode Table
 
-Let me check the current MashupCard logic. Looking at `handleCardClick`:
-```
-if (flippable) handleFlip(e);
-else if (isModeratorMode && onEdit) onEdit();
-else if (onClick) onClick();
-```
+### Goal
+Extend the planned Expert Mode spreadsheet view with CSV round-tripping plus a copyable prompt that primes another LLM (ChatGPT, Claude, etc.) to generate a deck CSV in the right shape.
 
-And `handleFlip`:
-```
-if (!flippable) return;
-e.stopPropagation();
-if (!isFlipped && onFlip) onFlip();
-setIsFlipped(!isFlipped);
+### Where it lives
+A new toolbar row at the top of the `ExpertCardTable` (below the category select, above the table):
+
+```text
+[Export CSV]  [Import CSV]  [Copy LLM Prompt]
 ```
 
-That logic looks correct. So why is flip broken? Let me check ShuffleArea: `flippable={!isModeratorMode}` — so flippable is true when not in moderator mode. Should work.
+All three buttons sit inline as small ghost buttons with mono uppercase labels — same editorial styling as the rest of Expert Mode.
 
-Also need to check the build error: `useGameMode.ts(37,27): NodeJS namespace not found`. Easy fix: use `ReturnType<typeof setInterval>` instead of `NodeJS.Timeout`.
+### CSV Shape
 
-Likely cause of broken flip: the new regenerate button's onRegenerate callback was added, and possibly the onClick on the card div is being intercepted, OR — more likely — the parent `motion.div` wrapper or the card structure changed. Actually, looking closer: the `onClick={handleCardClick}` is on an inner div, but the outer `motion.div` from animate=true wraps everything. That should still bubble.
+One file = one preset (all four categories together). Header + rows:
 
-Wait — checking front face: the regenerate button + actions are in `absolute top-3 right-3 z-10`. Clicking on card body should still trigger handleCardClick. 
+```csv
+category,text,type
+insight,"People crave quiet luxury",default
+insight,"Gen Z treats receipts as identity",custom
+asset,"Our newsletter has 80k subscribers",custom
+tech,"Voice agents that book appointments",ai
+random,"A handwritten letter",default
+```
 
-Possible issue: `pointer-events`. The contentRef inner div is scaled with transform. The container has `overflow-hidden`. Should still receive clicks.
+Columns:
+- `category` — one of `insight | asset | tech | random` (validated on import)
+- `text` — the card text (quoted; supports commas + newlines)
+- `type` — `default | custom | ai` (informational on export; on import everything becomes a wildcard/custom regardless, since defaults live in code)
 
-Let me actually just check — the user says "flip and explain cannot be triggered". Most likely cause: the onClick is on the inner rotation div, but events from FrontFace (which is `absolute inset-0`) should bubble up through the rotation div. That should work.
+Filename: `mashup-deck-<presetName>-<YYYYMMDD>.csv`.
 
-Hmm, one theory: the regenerate button has `disabled={isRegenerating}` but no e.stopPropagation when not regenerating — wait it does have stopPropagation. OK.
+### Export behavior
+- Click "Export CSV" → builds rows from all four categories of the active preset (defaults + AI + wildcards), serialises with proper RFC 4180 quoting, triggers a browser download via a Blob.
+- No external library — small inline `toCsv()` helper handles escaping.
 
-Another theory: the previous task summary mentioned "In moderator mode, cards are clickable for direct editing" — but the user says flip is broken in normal (non-moderator) mode. Let me re-examine. In non-moderator mode with onRegenerate passed: handleCardClick → flippable=true → handleFlip → setIsFlipped(true). Should work.
+### Import behavior
+- Click "Import CSV" → opens an `<input type="file" accept=".csv">` (hidden, ref-clicked).
+- Parse client-side with a small inline parser (handles quoted fields, escaped quotes, CRLF). No `papaparse` dependency.
+- Validate each row:
+  - Category must be one of the four valid values.
+  - Text must be non-empty after trim.
+  - Skip + count invalid rows.
+- Open a confirmation dialog showing: "Import N cards into this deck? (M skipped)" with options:
+  - **Append** — add all valid rows as wildcards alongside existing cards.
+  - **Replace wildcards** — clear existing wildcards in this preset first, then add imported rows as wildcards.
+  - **Cancel**.
+- On confirm, loop `onAddWildcard(text, category)` for each valid row. Toast: "Imported N cards."
 
-Maybe the issue is visual: the card flips but the explanation doesn't show because of some other issue. Or perhaps Index.tsx is passing isModeratorMode=true unintentionally? Without seeing Index.tsx I can't be sure, but the simplest robust fix is:
+(Defaults stay untouched — import never overwrites the built-in card pool, only the wildcard layer. This keeps the model simple and reversible.)
 
-**Plan:**
-1. Remove the `onRegenerate` button from `MashupCard`'s front face (and its props), plus remove `isModeratorMode`/`onEdit`/`hasOverride` rendering of pencil icon — keep card pure display + flip.
-2. Remove regenerate wiring from `ShuffleArea` and `Index.tsx` (don't pass `onRegenerateCard`, `isRegenerating`, `isModeratorMode`, `onEditCard`, `hasOverride` to MashupCard).
-3. Card-editing access stays available in the Browse Decks drawer (already exists) and ProblemStatementEditor — moderator editing on the canvas itself is removed per user request.
-4. Fix `useGameMode.ts` build error: replace `NodeJS.Timeout` with `ReturnType<typeof setInterval>`.
+### LLM Prompt button
+- Click "Copy LLM Prompt" → copies a ready-to-paste prompt to clipboard, shows toast "Prompt copied."
+- The prompt:
 
-Result: Cards on the canvas are click-to-flip only. Clean, no edit/regenerate icons. Flip + AI explanation works reliably.
+```text
+Generate a brainstorming card deck for [TOPIC] as CSV with this exact schema:
 
-## Files to change
-- `src/components/MashupCard.tsx` — drop edit/regenerate UI; simplify click handler to flip-only (when `flippable`).
-- `src/components/ShuffleArea.tsx` — stop passing edit/regenerate props.
-- `src/pages/Index.tsx` — stop passing `onRegenerateCard`, `isRegenerating`, `isModeratorMode`, `onEditCard`, `hasOverride` to ShuffleArea.
-- `src/hooks/useGameMode.ts` — fix `NodeJS.Timeout` type to `ReturnType<typeof setInterval>`.
+category,text,type
 
-No prop interface changes elsewhere; useCardRegeneration hook stays available for future use but is unused on the canvas.
+Rules:
+- category must be one of: insight, asset, tech, random
+  - insight = consumer/human/cultural truths
+  - asset = brand assets, channels, owned things
+  - tech = catalysts: technologies, formats, platforms
+  - random = wild, unrelated provocations
+- text = a single short, punchy card (8–18 words). No numbering, no quotes inside unless escaped.
+- type = always "custom" for generated rows.
+
+Generate exactly 15 cards per category (60 total). Output ONLY the CSV — no preamble, no code fence, no commentary. First line must be the header.
+```
+
+A small `[TOPIC]` placeholder hint sits next to the button: *"Replace [TOPIC] with your brand or theme."*
+
+### Files
+
+**New**
+- `src/lib/deckCsv.ts` — pure helpers: `serializeDeckToCsv(cards)`, `parseCsvToCards(text)`, `LLM_DECK_PROMPT` constant.
+
+**Changed**
+- `src/components/DeckHub/ExpertCardTable.tsx` (the spreadsheet view from the previously approved plan) — add the toolbar row with the three buttons, the hidden file input, and the import-confirmation `AlertDialog`.
+
+No hook, edge function, or schema changes. Imported rows go through the existing `onAddWildcard` callback already wired in `useDeckManager`, so localStorage persistence is automatic.
+
+### Edge cases handled
+- Empty CSV / header-only → toast "No cards found in file."
+- Invalid category → row skipped, counted in summary.
+- Duplicate text inside the same category → still imported (user may want repeats; cheap to dedupe later if needed).
+- Files >1MB → toast "File too large (max 1MB)" and abort.
