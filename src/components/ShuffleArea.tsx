@@ -51,7 +51,6 @@ interface ShuffleAreaProps {
   onEditWildcard?: (id: string, text: string) => void;
   onUpdateCardText?: (id: string, text: string) => void;
   onResetCardText?: (id: string) => void;
-  hasOverride?: (id: string) => boolean;
 }
 
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
@@ -102,7 +101,6 @@ export function ShuffleArea({
   onEditWildcard,
   onUpdateCardText,
   onResetCardText,
-  hasOverride: hasOverrideProp,
 }: ShuffleAreaProps) {
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
@@ -179,7 +177,7 @@ export function ShuffleArea({
               onEditWildcard={onEditWildcard}
               onUpdateCardText={onUpdateCardText}
               onResetCardText={onResetCardText}
-              hasOverride={hasOverrideProp}
+              hasOverride={hasOverride}
             />
           </div>
         )}
