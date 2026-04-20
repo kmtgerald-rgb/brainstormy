@@ -351,11 +351,6 @@ const Index = () => {
             isShuffling={isShuffling}
             problemStatement={localProblemStatement}
             onEditProblem={() => setIsFocusEditorOpen(true)}
-            isModeratorMode={isModeratorMode}
-            hasOverride={hasOverride}
-            onEditCard={handleEditCard}
-            onRegenerateCard={handleRegenerateCard}
-            isRegenerating={isRegenerating}
             onSaveIdea={handleSaveIdea}
             onAISuggest={handleGetSuggestion}
             aiSuggestion={suggestion}
