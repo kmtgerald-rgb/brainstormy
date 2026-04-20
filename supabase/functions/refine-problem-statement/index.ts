@@ -60,7 +60,7 @@ serve(async (req) => {
   }
 
   try {
-    const { context, focusType } = await req.json();
+    const { context, focusType, language } = await req.json();
 
     const minLength = 10;
     const maxLength = 2000;
@@ -91,9 +91,13 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = focusTypePrompts[focusType] || focusTypePrompts['hmw'];
+    let systemPrompt = focusTypePrompts[focusType] || focusTypePrompts['hmw'];
+    const isZhHK = language === 'zh-HK';
+    if (isZhHK) {
+      systemPrompt += `\n\nRespond in Hong Kong Traditional Chinese (繁體中文 · 香港) using Apple's product copy style: confident, minimal, written register (書面語, not 口語). Use 的/是/這, never 嘅/係/呢. Short declarative sentences. No exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard.`;
+    }
 
-    console.log('Refining problem statement for context:', context.substring(0, 100), 'focusType:', focusType || 'hmw');
+    console.log('Refining problem statement for context:', context.substring(0, 100), 'focusType:', focusType || 'hmw', 'language:', language || 'en');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
