@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, Info, ArrowLeftRight } from 'lucide-react';
-import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
+import { useTranslation } from 'react-i18next';
+import { Card, Category } from '@/data/defaultCards';
+import { getCardText } from '@/i18n/cardTranslations';
 import { cn } from '@/lib/utils';
 
 interface MashupCardProps {
@@ -64,10 +66,12 @@ export function MashupCard({
   onRegenerate,
   isRegenerating = false,
 }: MashupCardProps) {
+  const { t, i18n } = useTranslation();
   const [isFlipped, setIsFlipped] = useState(false);
   const [scale, setScale] = useState(1);
   const contentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const displayText = getCardText(card, i18n.language);
 
   const recalcScale = useCallback(() => {
     const content = contentRef.current;
@@ -84,7 +88,7 @@ export function MashupCard({
 
   useEffect(() => {
     recalcScale();
-  }, [card.text, size, recalcScale]);
+  }, [displayText, size, recalcScale]);
 
   const sizeClasses = {
     sm: 'p-4 min-h-[100px]',
@@ -110,7 +114,7 @@ export function MashupCard({
     return 'text-sm leading-relaxed';
   };
 
-  const textSizeClass = getResponsiveTextSize(card.text, size);
+  const textSizeClass = getResponsiveTextSize(displayText, size);
 
   const handleFlip = (e: React.MouseEvent) => {
     if (!flippable) return;
@@ -145,12 +149,12 @@ export function MashupCard({
       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
         {card.isGenerated && (
           <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-primary/10 text-primary rounded">
-            AI
+            {t('card.ai')}
           </span>
         )}
         {card.isWildcard && (
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Wildcard
+            {t('card.wildcard')}
           </span>
         )}
         {flippable && (
@@ -175,10 +179,10 @@ export function MashupCard({
             'font-mono text-[10px] uppercase tracking-wider mb-3 block',
             categoryTextStyles[card.category]
           )}>
-            {categoryShortLabels[card.category]}
+            {t(`categories.${card.category}Short` as const)}
           </span>
         )}
-        <p className={cn('font-serif', textSizeClass)}>{card.text}</p>
+        <p className={cn('font-serif', textSizeClass)}>{displayText}</p>
       </div>
     </div>
   );
@@ -200,12 +204,12 @@ export function MashupCard({
         'font-mono text-[10px] uppercase tracking-wider mb-2 block',
         categoryTextStyles[card.category]
       )}>
-        Why it matters
+        {t('card.whyItMatters')}
       </span>
 
       {explanationLoading ? (
         <p className="font-serif text-sm text-muted-foreground/60 italic animate-pulse">
-          Thinking...
+          {t('card.thinking')}
         </p>
       ) : explanation ? (
         <p className="font-serif text-sm leading-relaxed text-muted-foreground line-clamp-4">
@@ -213,7 +217,7 @@ export function MashupCard({
         </p>
       ) : (
         <p className="font-serif text-sm text-muted-foreground/60 italic">
-          Tap to reveal...
+          {t('card.tapToReveal')}
         </p>
       )}
     </div>

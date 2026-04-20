@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle, RotateCcw, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ export function FloatingActionBar({
   onShuffle,
   onClear,
 }: FloatingActionBarProps) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}
@@ -46,7 +48,7 @@ export function FloatingActionBar({
                   className="w-full gap-3 py-6 text-base font-mono uppercase tracking-wider"
                 >
                   <Shuffle className={cn('w-5 h-5', isShuffling && 'animate-spin')} />
-                  Shuffle
+                  {t('shuffle.shuffle')}
                 </Button>
               </motion.div>
             ) : (
@@ -66,7 +68,7 @@ export function FloatingActionBar({
                   className="gap-2 font-mono text-xs uppercase tracking-wider"
                 >
                   <RotateCcw className={cn('w-4 h-4', isShuffling && 'animate-spin')} />
-                  <span className="hidden sm:inline">Reshuffle</span>
+                  <span className="hidden sm:inline">{t('shuffle.reshuffle')}</span>
                 </Button>
 
                 {/* Clear */}
