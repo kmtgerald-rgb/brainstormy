@@ -1,92 +1,75 @@
 
-## CSV Import/Export for Expert Mode Table
+## Expert Mode = Default + Excel Hotkeys + Range Copy/Paste
 
-### Goal
-Extend the planned Expert Mode spreadsheet view with CSV round-tripping plus a copyable prompt that primes another LLM (ChatGPT, Claude, etc.) to generate a deck CSV in the right shape.
+### Scope additions on top of the previous plan
+1. Remove non-expert browser branch — spreadsheet is the only view.
+2. Excel-style keyboard navigation (arrows, Tab, Enter, Esc, Cmd+arrows, Cmd+Backspace, Cmd+N).
+3. **NEW: Range selection + copy/paste** (TSV clipboard, Excel/Sheets compatible).
 
-### Where it lives
-A new toolbar row at the top of the `ExpertCardTable` (below the category select, above the table):
+### Range copy/paste behavior
 
-```text
-[Export CSV]  [Import CSV]  [Copy LLM Prompt]
-```
+**Selection model**
+- Single active cell is the anchor. Shift+Click or Shift+↑/↓ extends selection to a contiguous row range (single column = `text`, since that's the only editable column).
+- Selected rows get a subtle inset ring + slightly stronger bg.
+- Click anywhere else / Esc clears selection back to single active row.
 
-All three buttons sit inline as small ghost buttons with mono uppercase labels — same editorial styling as the rest of Expert Mode.
+**Copy (`Cmd/Ctrl+C`)**
+- Serialises selected rows as TSV, one card text per line. Multi-line card text is preserved by quoting per RFC 4180 (so it round-trips into Excel/Sheets cleanly):
+  ```
+  People crave quiet luxury
+  "Gen Z treats receipts
+  as identity"
+  ```
+- Writes to `navigator.clipboard` as `text/plain`. Toast: "Copied N cards."
 
-### CSV Shape
+**Cut (`Cmd/Ctrl+X`)**
+- Same as copy, then deletes the selected rows (only wildcards are removed; default/AI rows in the selection are skipped with a count in the toast: "Copied 5, removed 3 wildcards").
 
-One file = one preset (all four categories together). Header + rows:
+**Paste (`Cmd/Ctrl+V`)**
+- Reads clipboard `text/plain`, splits into lines (CRLF/LF), strips RFC-4180 quoting on multi-line quoted blocks.
+- Each non-empty line → one new wildcard in the **currently selected category** (since paste is single-column).
+- Inserted at the position after the active row (or at end if no active row). New rows become the selection.
+- Toast: "Pasted N cards."
 
-```csv
-category,text,type
-insight,"People crave quiet luxury",default
-insight,"Gen Z treats receipts as identity",custom
-asset,"Our newsletter has 80k subscribers",custom
-tech,"Voice agents that book appointments",ai
-random,"A handwritten letter",default
-```
+**Paste from Excel/Sheets**
+- A column copied from Excel arrives as one text-per-line. Same rule applies — each line becomes a wildcard in the active category. Multi-line cells (quoted) are preserved as multi-line card text.
+- Multi-column TSV from Excel: only the first column is used (others ignored), with a soft toast hint: "Only first column imported."
 
-Columns:
-- `category` — one of `insight | asset | tech | random` (validated on import)
-- `text` — the card text (quoted; supports commas + newlines)
-- `type` — `default | custom | ai` (informational on export; on import everything becomes a wildcard/custom regardless, since defaults live in code)
+**Range delete**
+- `Cmd/Ctrl+Backspace` or `Delete` while a range is selected → removes all selected wildcards. Default/AI rows in the range are skipped (counted in toast).
 
-Filename: `mashup-deck-<presetName>-<YYYYMMDD>.csv`.
+### Updated keyboard map
 
-### Export behavior
-- Click "Export CSV" → builds rows from all four categories of the active preset (defaults + AI + wildcards), serialises with proper RFC 4180 quoting, triggers a browser download via a Blob.
-- No external library — small inline `toCsv()` helper handles escaping.
-
-### Import behavior
-- Click "Import CSV" → opens an `<input type="file" accept=".csv">` (hidden, ref-clicked).
-- Parse client-side with a small inline parser (handles quoted fields, escaped quotes, CRLF). No `papaparse` dependency.
-- Validate each row:
-  - Category must be one of the four valid values.
-  - Text must be non-empty after trim.
-  - Skip + count invalid rows.
-- Open a confirmation dialog showing: "Import N cards into this deck? (M skipped)" with options:
-  - **Append** — add all valid rows as wildcards alongside existing cards.
-  - **Replace wildcards** — clear existing wildcards in this preset first, then add imported rows as wildcards.
-  - **Cancel**.
-- On confirm, loop `onAddWildcard(text, category)` for each valid row. Toast: "Imported N cards."
-
-(Defaults stay untouched — import never overwrites the built-in card pool, only the wildcard layer. This keeps the model simple and reversible.)
-
-### LLM Prompt button
-- Click "Copy LLM Prompt" → copies a ready-to-paste prompt to clipboard, shows toast "Prompt copied."
-- The prompt:
-
-```text
-Generate a brainstorming card deck for [TOPIC] as CSV with this exact schema:
-
-category,text,type
-
-Rules:
-- category must be one of: insight, asset, tech, random
-  - insight = consumer/human/cultural truths
-  - asset = brand assets, channels, owned things
-  - tech = catalysts: technologies, formats, platforms
-  - random = wild, unrelated provocations
-- text = a single short, punchy card (8–18 words). No numbering, no quotes inside unless escaped.
-- type = always "custom" for generated rows.
-
-Generate exactly 15 cards per category (60 total). Output ONLY the CSV — no preamble, no code fence, no commentary. First line must be the header.
-```
-
-A small `[TOPIC]` placeholder hint sits next to the button: *"Replace [TOPIC] with your brand or theme."*
+| Key | Behavior |
+|---|---|
+| `↑` `↓` | Move active row |
+| `Shift+↑` `Shift+↓` | Extend range selection |
+| `Cmd+↑` `Cmd+↓` | Jump to first / last row |
+| `Cmd+Shift+↑` `Cmd+Shift+↓` | Extend selection to first / last |
+| `Enter` | Edit active row |
+| `Enter` (editing) | Commit + move down + open edit |
+| `Shift+Enter` (editing) | Newline in textarea |
+| `Tab` / `Shift+Tab` (editing) | Commit + move down / up |
+| `Esc` | Cancel edit / clear range |
+| `Cmd+C` / `Cmd+X` / `Cmd+V` | Copy / Cut / Paste range (TSV) |
+| `Cmd+Backspace` or `Delete` | Delete selected wildcards |
+| `Cmd+N` | Focus the "Add card" input |
+| `Cmd+A` | Select all rows in current view |
 
 ### Files
 
-**New**
-- `src/lib/deckCsv.ts` — pure helpers: `serializeDeckToCsv(cards)`, `parseCsvToCards(text)`, `LLM_DECK_PROMPT` constant.
-
 **Changed**
-- `src/components/DeckHub/ExpertCardTable.tsx` (the spreadsheet view from the previously approved plan) — add the toolbar row with the three buttons, the hidden file input, and the import-confirmation `AlertDialog`.
+- `src/components/DeckHub/CardBrowser.tsx` — strip non-expert branch, render `ExpertCardTable` directly.
+- `src/components/DeckHub/ExpertCardTable.tsx` — add `activeRowId` + `selectionAnchorId` state, keyboard handler on the scroll container, row refs for `scrollIntoView`, range serialise/parse helpers (inline, ~30 LOC, RFC-4180 quoting reused from `deckCsv.ts`), clipboard read/write, footer legend.
 
-No hook, edge function, or schema changes. Imported rows go through the existing `onAddWildcard` callback already wired in `useDeckManager`, so localStorage persistence is automatic.
+**Reused**
+- `serializeDeckToCsv` / `parseCsvToCards` quoting logic in `src/lib/deckCsv.ts` — extract a tiny `escapeCell` / `parseLines` helper there so the table can reuse it for TSV.
 
-### Edge cases handled
-- Empty CSV / header-only → toast "No cards found in file."
-- Invalid category → row skipped, counted in summary.
-- Duplicate text inside the same category → still imported (user may want repeats; cheap to dedupe later if needed).
-- Files >1MB → toast "File too large (max 1MB)" and abort.
+### Footer legend
+Replace current hint with:
+`↑↓ navigate · ⇧↑↓ select · ⌘C/V copy/paste · Enter edit · ⌘⌫ delete`
+
+### Out of scope
+- Multi-column selection (only `text` is editable, so single-column is sufficient).
+- Cross-category paste (paste always lands in the active category).
+- Undo/redo stack (separate feature).
