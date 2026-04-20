@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
-import { Trash2, Plus, Download, Upload, Copy, Sparkles } from 'lucide-react';
+import { useState, useRef, useMemo, useEffect, useCallback, KeyboardEvent } from 'react';
+import { Trash2, Plus, Download, Upload, Sparkles } from 'lucide-react';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +32,8 @@ import {
   csvFilename,
   LLM_DECK_PROMPT,
   ParsedCsvRow,
+  serializeTextLinesToTsv,
+  parsePastedTextToLines,
 } from '@/lib/deckCsv';
 import { DeckPreset } from '@/hooks/useDeckManager';
 
@@ -64,6 +66,8 @@ const typeBadge = (card: Card) => {
 
 const MAX_FILE_SIZE = 1_000_000; // 1MB
 
+const isMod = (e: KeyboardEvent | React.MouseEvent) => e.metaKey || e.ctrlKey;
+
 export function ExpertCardTable({
   activePreset,
   wildcards,
@@ -78,10 +82,15 @@ export function ExpertCardTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [newCardText, setNewCardText] = useState('');
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [anchorId, setAnchorId] = useState<string | null>(null);
+
   const editRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const newInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
 
-  // Import dialog state
   const [pendingImport, setPendingImport] = useState<{ rows: ParsedCsvRow[]; skipped: number } | null>(null);
 
   useEffect(() => {
@@ -100,29 +109,65 @@ export function ExpertCardTable({
     return [...baseCards, ...categoryWildcards];
   }, [selectedCategory, filter, getCardsForCategory, wildcards]);
 
+  // Reset selection when the visible rows change
+  useEffect(() => {
+    if (activeId && !categoryCards.find((c) => c.id === activeId)) {
+      setActiveId(null);
+      setAnchorId(null);
+    }
+  }, [categoryCards, activeId]);
+
+  // Compute the set of selected row ids (range between anchor and active)
+  const selectedIds = useMemo(() => {
+    if (!activeId) return new Set<string>();
+    if (!anchorId || anchorId === activeId) return new Set([activeId]);
+    const ai = categoryCards.findIndex((c) => c.id === anchorId);
+    const bi = categoryCards.findIndex((c) => c.id === activeId);
+    if (ai < 0 || bi < 0) return new Set([activeId]);
+    const [lo, hi] = ai <= bi ? [ai, bi] : [bi, ai];
+    return new Set(categoryCards.slice(lo, hi + 1).map((c) => c.id));
+  }, [activeId, anchorId, categoryCards]);
+
+  const scrollToRow = useCallback((id: string) => {
+    const el = rowRefs.current.get(id);
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, []);
+
+  const setActive = useCallback(
+    (id: string | null, extend = false) => {
+      setActiveId(id);
+      if (!extend) setAnchorId(id);
+      if (id) scrollToRow(id);
+    },
+    [scrollToRow],
+  );
+
+  // === Edit ===
   const startEdit = (card: Card) => {
     setEditingId(card.id);
     setEditText(card.text);
+    setActive(card.id);
   };
 
-  const saveEdit = () => {
-    if (!editingId || !editText.trim()) {
-      cancelEdit();
-      return;
+  const commitEdit = (): { id: string | null } => {
+    if (!editingId) return { id: null };
+    const id = editingId;
+    if (!editText.trim()) {
+      setEditingId(null);
+      setEditText('');
+      return { id };
     }
-    const card = categoryCards.find((c) => c.id === editingId);
-    if (!card) {
-      cancelEdit();
-      return;
-    }
-    if (card.isWildcard && onEditWildcard) {
-      onEditWildcard(editingId, editText.trim());
-    } else {
-      // For default/AI cards, create an override as a new wildcard
-      onAddWildcard(editText.trim(), selectedCategory);
+    const card = categoryCards.find((c) => c.id === id);
+    if (card) {
+      if (card.isWildcard && onEditWildcard) {
+        onEditWildcard(id, editText.trim());
+      } else {
+        onAddWildcard(editText.trim(), selectedCategory);
+      }
     }
     setEditingId(null);
     setEditText('');
+    return { id };
   };
 
   const cancelEdit = () => {
@@ -136,7 +181,7 @@ export function ExpertCardTable({
     setNewCardText('');
   };
 
-  // === CSV: Export ===
+  // === CSV ===
   const handleExport = () => {
     const allCategories: Category[] = ['insight', 'asset', 'tech', 'random'];
     const allCards: Card[] = [];
@@ -153,14 +198,11 @@ export function ExpertCardTable({
     toast.success(`Exported ${allCards.length} cards`);
   };
 
-  // === CSV: Import ===
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-selecting same file
+    e.target.value = '';
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
       toast.error('File too large (max 1MB)');
@@ -183,9 +225,7 @@ export function ExpertCardTable({
   const performImport = (mode: 'append' | 'replace') => {
     if (!pendingImport) return;
     const { rows } = pendingImport;
-
     if (mode === 'replace') {
-      // Remove existing wildcards (across all categories represented in import)
       const cats = new Set(rows.map((r) => r.category));
       wildcards.filter((w) => cats.has(w.category)).forEach((w) => onRemoveWildcard(w.id));
     }
@@ -194,7 +234,6 @@ export function ExpertCardTable({
     setPendingImport(null);
   };
 
-  // === LLM Prompt ===
   const handleCopyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(LLM_DECK_PROMPT);
@@ -204,13 +243,203 @@ export function ExpertCardTable({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // === Clipboard: copy / cut / paste ===
+  const copySelection = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const texts = categoryCards.filter((c) => selectedIds.has(c.id)).map((c) => c.text);
+    try {
+      await navigator.clipboard.writeText(serializeTextLinesToTsv(texts));
+      toast.success(`Copied ${texts.length} card${texts.length === 1 ? '' : 's'}`);
+    } catch {
+      toast.error('Could not copy to clipboard');
+    }
+  }, [selectedIds, categoryCards]);
+
+  const cutSelection = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const rows = categoryCards.filter((c) => selectedIds.has(c.id));
+    const texts = rows.map((c) => c.text);
+    const removable = rows.filter((c) => c.isWildcard);
+    try {
+      await navigator.clipboard.writeText(serializeTextLinesToTsv(texts));
+    } catch {
+      toast.error('Could not copy to clipboard');
+      return;
+    }
+    removable.forEach((c) => onRemoveWildcard(c.id));
+    const skipped = rows.length - removable.length;
+    toast.success(
+      `Copied ${texts.length}${skipped > 0 ? `, removed ${removable.length} wildcard${removable.length === 1 ? '' : 's'}` : ''}`,
+    );
+  }, [selectedIds, categoryCards, onRemoveWildcard]);
+
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      const { lines, hadMultipleColumns } = parsePastedTextToLines(text);
+      if (lines.length === 0) {
+        toast.error('Clipboard is empty');
+        return;
+      }
+      lines.forEach((t) => onAddWildcard(t, selectedCategory));
+      toast.success(
+        `Pasted ${lines.length} card${lines.length === 1 ? '' : 's'}${hadMultipleColumns ? ' · only first column imported' : ''}`,
+      );
+    } catch {
+      toast.error('Could not read clipboard');
+    }
+  }, [onAddWildcard, selectedCategory]);
+
+  const deleteSelection = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    const rows = categoryCards.filter((c) => selectedIds.has(c.id));
+    const removable = rows.filter((c) => c.isWildcard);
+    if (removable.length === 0) {
+      toast.error('Selection contains no custom cards to delete');
+      return;
+    }
+    removable.forEach((c) => onRemoveWildcard(c.id));
+    const skipped = rows.length - removable.length;
+    toast.success(
+      `Deleted ${removable.length} wildcard${removable.length === 1 ? '' : 's'}${skipped > 0 ? ` · skipped ${skipped}` : ''}`,
+    );
+  }, [selectedIds, categoryCards, onRemoveWildcard]);
+
+  // === Edit-mode keyboard handler ===
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      saveEdit();
-    } else if (e.key === 'Escape') {
-      cancelEdit();
+      const { id } = commitEdit();
+      // Move down + open edit on next row
+      if (id) {
+        const idx = categoryCards.findIndex((c) => c.id === id);
+        const next = categoryCards[idx + 1];
+        if (next) {
+          setActive(next.id);
+          startEdit(next);
+        }
+      }
+      return;
     }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const { id } = commitEdit();
+      if (id) {
+        const idx = categoryCards.findIndex((c) => c.id === id);
+        const target = categoryCards[idx + (e.shiftKey ? -1 : 1)];
+        if (target) setActive(target.id);
+      }
+    }
+  };
+
+  // === Container-level keyboard handler (navigation + clipboard + delete) ===
+  const handleContainerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Don't intercept while editing — textarea has its own handler
+    if (editingId) return;
+    // Don't intercept while typing in the "add new" input
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' && target !== containerRef.current) return;
+
+    const idx = activeId ? categoryCards.findIndex((c) => c.id === activeId) : -1;
+
+    // ⌘N → focus new card input
+    if (isMod(e) && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      newInputRef.current?.focus();
+      return;
+    }
+
+    // ⌘A → select all
+    if (isMod(e) && e.key.toLowerCase() === 'a') {
+      if (categoryCards.length === 0) return;
+      e.preventDefault();
+      setAnchorId(categoryCards[0].id);
+      setActiveId(categoryCards[categoryCards.length - 1].id);
+      return;
+    }
+
+    // ⌘C / ⌘X / ⌘V
+    if (isMod(e) && e.key.toLowerCase() === 'c') {
+      if (selectedIds.size === 0) return;
+      e.preventDefault();
+      copySelection();
+      return;
+    }
+    if (isMod(e) && e.key.toLowerCase() === 'x') {
+      if (selectedIds.size === 0) return;
+      e.preventDefault();
+      cutSelection();
+      return;
+    }
+    if (isMod(e) && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      pasteFromClipboard();
+      return;
+    }
+
+    // Delete / ⌘Backspace
+    if (e.key === 'Delete' || (isMod(e) && e.key === 'Backspace')) {
+      if (selectedIds.size === 0) return;
+      e.preventDefault();
+      deleteSelection();
+      return;
+    }
+
+    // Esc → clear range to single
+    if (e.key === 'Escape') {
+      if (activeId) {
+        e.preventDefault();
+        setAnchorId(activeId);
+      }
+      return;
+    }
+
+    // Enter → edit active row
+    if (e.key === 'Enter' && activeId) {
+      e.preventDefault();
+      const card = categoryCards.find((c) => c.id === activeId);
+      if (card) startEdit(card);
+      return;
+    }
+
+    // Arrow navigation
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (categoryCards.length === 0) return;
+      e.preventDefault();
+      const dir = e.key === 'ArrowDown' ? 1 : -1;
+      let nextIdx: number;
+      if (isMod(e)) {
+        nextIdx = dir === 1 ? categoryCards.length - 1 : 0;
+      } else if (idx < 0) {
+        nextIdx = dir === 1 ? 0 : categoryCards.length - 1;
+      } else {
+        nextIdx = Math.max(0, Math.min(categoryCards.length - 1, idx + dir));
+      }
+      const next = categoryCards[nextIdx];
+      setActiveId(next.id);
+      if (!e.shiftKey) setAnchorId(next.id);
+      else if (!anchorId) setAnchorId(activeId ?? next.id);
+      scrollToRow(next.id);
+      return;
+    }
+  };
+
+  const handleRowClick = (e: React.MouseEvent, id: string) => {
+    if (e.shiftKey && activeId) {
+      setActiveId(id);
+      // keep existing anchor
+      if (!anchorId) setAnchorId(activeId);
+    } else {
+      setActiveId(id);
+      setAnchorId(id);
+    }
+    containerRef.current?.focus();
   };
 
   return (
@@ -277,10 +506,16 @@ export function ExpertCardTable({
       {/* Add new row */}
       <div className="flex gap-2">
         <Input
+          ref={newInputRef}
           placeholder={`Add a new ${categoryLabels[selectedCategory].toLowerCase()} card...`}
           value={newCardText}
           onChange={(e) => setNewCardText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddNew()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddNew();
+            }
+          }}
           className="h-8 text-xs"
         />
         <Button
@@ -295,96 +530,123 @@ export function ExpertCardTable({
         </Button>
       </div>
 
-      {/* Spreadsheet table */}
-      <ScrollArea className="h-[420px] border border-border rounded-sm">
-        <Table>
-          <TableHeader className="bg-muted/30 sticky top-0 z-10">
-            <TableRow>
-              <TableHead className="h-8 w-10 px-2 font-mono text-[10px] uppercase tracking-wider">
-                #
-              </TableHead>
-              <TableHead className="h-8 px-2 font-mono text-[10px] uppercase tracking-wider">
-                Card Text
-              </TableHead>
-              <TableHead className="h-8 w-20 px-2 font-mono text-[10px] uppercase tracking-wider">
-                Type
-              </TableHead>
-              <TableHead className="h-8 w-12 px-2"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categoryCards.map((card, idx) => {
-              const badge = typeBadge(card);
-              const isEditing = editingId === card.id;
-              return (
-                <TableRow
-                  key={card.id}
-                  className={cn(
-                    'border-l-2 group hover:bg-muted/30',
-                    categoryAccent[card.category],
-                    isEditing && 'bg-muted/40',
-                  )}
-                >
-                  <TableCell className="py-1.5 px-2 font-mono text-[10px] text-muted-foreground align-top">
-                    {idx + 1}
-                  </TableCell>
-                  <TableCell className="py-1.5 px-2 align-top">
-                    {isEditing ? (
-                      <Textarea
-                        ref={editRef}
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onBlur={saveEdit}
-                        className="min-h-[44px] text-xs resize-none py-1 px-2"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => startEdit(card)}
-                        className="text-xs leading-relaxed text-left w-full hover:text-foreground/80 transition-colors"
-                        title="Click to edit"
-                      >
-                        {card.text}
-                      </button>
+      {/* Spreadsheet table — focusable for keyboard nav */}
+      <div
+        ref={containerRef}
+        tabIndex={0}
+        onKeyDown={handleContainerKeyDown}
+        className="outline-none focus:ring-1 focus:ring-ring rounded-sm"
+      >
+        <ScrollArea className="h-[420px] border border-border rounded-sm">
+          <Table>
+            <TableHeader className="bg-muted/30 sticky top-0 z-10">
+              <TableRow>
+                <TableHead className="h-8 w-10 px-2 font-mono text-[10px] uppercase tracking-wider">
+                  #
+                </TableHead>
+                <TableHead className="h-8 px-2 font-mono text-[10px] uppercase tracking-wider">
+                  Card Text
+                </TableHead>
+                <TableHead className="h-8 w-20 px-2 font-mono text-[10px] uppercase tracking-wider">
+                  Type
+                </TableHead>
+                <TableHead className="h-8 w-12 px-2"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categoryCards.map((card, idx) => {
+                const badge = typeBadge(card);
+                const isEditing = editingId === card.id;
+                const isSelected = selectedIds.has(card.id);
+                const isActive = activeId === card.id;
+                return (
+                  <TableRow
+                    key={card.id}
+                    ref={(el) => {
+                      if (el) rowRefs.current.set(card.id, el);
+                      else rowRefs.current.delete(card.id);
+                    }}
+                    onClick={(e) => handleRowClick(e, card.id)}
+                    className={cn(
+                      'border-l-2 group cursor-pointer',
+                      categoryAccent[card.category],
+                      isSelected ? 'bg-primary/5' : 'hover:bg-muted/30',
+                      isActive && 'ring-1 ring-inset ring-primary/40',
+                      isEditing && 'bg-muted/40',
                     )}
-                  </TableCell>
-                  <TableCell className="py-1.5 px-2 align-top">
-                    <span
-                      className={cn(
-                        'inline-block px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider rounded',
-                        badge.cls,
+                  >
+                    <TableCell className="py-1.5 px-2 font-mono text-[10px] text-muted-foreground align-top">
+                      {idx + 1}
+                    </TableCell>
+                    <TableCell className="py-1.5 px-2 align-top">
+                      {isEditing ? (
+                        <Textarea
+                          ref={editRef}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
+                          onBlur={() => commitEdit()}
+                          className="min-h-[44px] text-xs resize-none py-1 px-2"
+                        />
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(e, card.id);
+                            startEdit(card);
+                          }}
+                          className="text-xs leading-relaxed text-left w-full hover:text-foreground/80 transition-colors whitespace-pre-wrap"
+                          title="Click to edit"
+                        >
+                          {card.text}
+                        </button>
                       )}
-                    >
-                      {badge.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-1.5 px-2 align-top">
-                    {card.isWildcard && (
-                      <button
-                        onClick={() => onRemoveWildcard(card.id)}
-                        className="p-1 hover:bg-destructive/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete card"
+                    </TableCell>
+                    <TableCell className="py-1.5 px-2 align-top">
+                      <span
+                        className={cn(
+                          'inline-block px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider rounded',
+                          badge.cls,
+                        )}
                       >
-                        <Trash2 className="w-3 h-3 text-destructive/70 hover:text-destructive" />
-                      </button>
-                    )}
+                        {badge.label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-1.5 px-2 align-top">
+                      {card.isWildcard && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveWildcard(card.id);
+                          }}
+                          className="p-1 hover:bg-destructive/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete card"
+                        >
+                          <Trash2 className="w-3 h-3 text-destructive/70 hover:text-destructive" />
+                        </button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {categoryCards.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
+                    No cards match this filter
                   </TableCell>
                 </TableRow>
-              );
-            })}
-            {categoryCards.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
-                  No cards match this filter
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
 
+      <p className="text-[10px] text-muted-foreground text-center font-mono">
+        ↑↓ navigate · ⇧↑↓ select · ⌘C/V copy/paste · Enter edit · ⌘⌫ delete
+      </p>
       <p className="text-[10px] text-muted-foreground text-center">
-        {categoryCards.length} cards in {categoryLabels[selectedCategory]} · Click any row to edit
+        {categoryCards.length} cards in {categoryLabels[selectedCategory]}
+        {selectedIds.size > 1 && ` · ${selectedIds.size} selected`}
       </p>
 
       {/* Import confirmation dialog */}
