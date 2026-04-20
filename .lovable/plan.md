@@ -1,75 +1,55 @@
 
-## Expert Mode = Default + Excel Hotkeys + Range Copy/Paste
+## Fix: Enter on a row should edit, not add a new card
 
-### Scope additions on top of the previous plan
-1. Remove non-expert browser branch — spreadsheet is the only view.
-2. Excel-style keyboard navigation (arrows, Tab, Enter, Esc, Cmd+arrows, Cmd+Backspace, Cmd+N).
-3. **NEW: Range selection + copy/paste** (TSV clipboard, Excel/Sheets compatible).
+### The bug
+When the user presses `Enter` on a selected row, focus is on the outer container (`containerRef`). The container handler does call `startEdit(card)`, but `startEdit` calls `setActive(card.id)` which calls `containerRef.current?.focus()`-adjacent logic… actually let me re-check by reading the code carefully.
 
-### Range copy/paste behavior
+Looking at `handleContainerKeyDown`:
+```
+if (e.key === 'Enter' && activeId) {
+  e.preventDefault();
+  const card = categoryCards.find((c) => c.id === activeId);
+  if (card) startEdit(card);
+  return;
+}
+```
+That looks right. But there's a guard above:
+```
+const target = e.target as HTMLElement;
+if (target.tagName === 'INPUT' && target !== containerRef.current) return;
+```
+The "Add new card" `<Input>` is part of the same container's DOM tree? No — the container only wraps the ScrollArea + table. The Input sits outside the container, so this isn't the issue there.
 
-**Selection model**
-- Single active cell is the anchor. Shift+Click or Shift+↑/↓ extends selection to a contiguous row range (single column = `text`, since that's the only editable column).
-- Selected rows get a subtle inset ring + slightly stronger bg.
-- Click anywhere else / Esc clears selection back to single active row.
+The actual problem: when the user clicks a row, `handleRowClick` runs `containerRef.current?.focus()`. Good — container has focus, Enter should be caught.
 
-**Copy (`Cmd/Ctrl+C`)**
-- Serialises selected rows as TSV, one card text per line. Multi-line card text is preserved by quoting per RFC 4180 (so it round-trips into Excel/Sheets cleanly):
-  ```
-  People crave quiet luxury
-  "Gen Z treats receipts
-  as identity"
-  ```
-- Writes to `navigator.clipboard` as `text/plain`. Toast: "Copied N cards."
+**But:** when the page first loads or the user toggles into Expert Mode, the new-card `Input` at the top is the first focusable element. If the user types text there and then clicks a row, focus moves to container and Enter works. However if the user clicks a row but the `Input` still has focus (e.g., they tabbed back), Enter triggers the Input's `onKeyDown`:
+```
+onKeyDown={(e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleAddNew();
+  }
+}}
+```
+→ adds a new (possibly empty/last-typed) card. That matches the symptom: "add new cards instead of editing the cell."
 
-**Cut (`Cmd/Ctrl+X`)**
-- Same as copy, then deletes the selected rows (only wildcards are removed; default/AI rows in the selection are skipped with a count in the toast: "Copied 5, removed 3 wildcards").
+Also: clicking the row calls `handleRowClick` which calls `containerRef.current?.focus()` — but the row's `<button>` inside the text cell may steal focus on click since buttons are focusable. After `mousedown` on the inner `<button>`, focus lands on that button, not the container. Pressing Enter on a button activates it → which calls `startEdit` (good) BUT also bubbles to the container's `onKeyDown`. Actually the button's onClick is on click, not keydown — so Enter on a focused button fires click → opens edit. That should work.
 
-**Paste (`Cmd/Ctrl+V`)**
-- Reads clipboard `text/plain`, splits into lines (CRLF/LF), strips RFC-4180 quoting on multi-line quoted blocks.
-- Each non-empty line → one new wildcard in the **currently selected category** (since paste is single-column).
-- Inserted at the position after the active row (or at end if no active row). New rows become the selection.
-- Toast: "Pasted N cards."
+The real culprit is most likely: **the new-card `Input` retains focus**, so Enter goes there. The user's mental model is "I clicked a row, Enter should edit it" — but their click didn't move focus off the Input because they clicked the row's text `<button>`, which calls `e.stopPropagation()` then `handleRowClick` then `startEdit`. Inside `startEdit`, there's no `focus()` call, and the row's button gets focus only briefly before `setEditingId` re-renders and the textarea autofocuses via the `useEffect`. So actually clicking a row text *does* enter edit immediately.
 
-**Paste from Excel/Sheets**
-- A column copied from Excel arrives as one text-per-line. Same rule applies — each line becomes a wildcard in the active category. Multi-line cells (quoted) are preserved as multi-line card text.
-- Multi-column TSV from Excel: only the first column is used (others ignored), with a soft toast hint: "Only first column imported."
+The reported scenario must be: user navigates with arrow keys (which work — container has focus), then presses Enter expecting to edit, but instead a new card is created. This happens when **`activeId` is null** — the Enter handler's `if (activeId)` guard fails, falls through, and… nothing else handles Enter at the container. So Enter does nothing at the container level. But if focus is actually on the new-card Input (because user hasn't clicked anywhere yet, or clicked a toolbar button which returned focus to body/Input), Enter → adds card.
 
-**Range delete**
-- `Cmd/Ctrl+Backspace` or `Delete` while a range is selected → removes all selected wildcards. Default/AI rows in the range are skipped (counted in toast).
+### The fix
 
-### Updated keyboard map
+Three small changes:
 
-| Key | Behavior |
-|---|---|
-| `↑` `↓` | Move active row |
-| `Shift+↑` `Shift+↓` | Extend range selection |
-| `Cmd+↑` `Cmd+↓` | Jump to first / last row |
-| `Cmd+Shift+↑` `Cmd+Shift+↓` | Extend selection to first / last |
-| `Enter` | Edit active row |
-| `Enter` (editing) | Commit + move down + open edit |
-| `Shift+Enter` (editing) | Newline in textarea |
-| `Tab` / `Shift+Tab` (editing) | Commit + move down / up |
-| `Esc` | Cancel edit / clear range |
-| `Cmd+C` / `Cmd+X` / `Cmd+V` | Copy / Cut / Paste range (TSV) |
-| `Cmd+Backspace` or `Delete` | Delete selected wildcards |
-| `Cmd+N` | Focus the "Add card" input |
-| `Cmd+A` | Select all rows in current view |
+1. **Auto-activate the first row on mount / when category changes**, so `activeId` is never null when the table is visible. This makes Enter always have a target.
+2. **Auto-focus the container** when the table mounts (and after category/filter changes), instead of leaving focus on the new-card Input. The Input still gets focus on `⌘N` for rapid bulk entry.
+3. **Stop the new-card Input from swallowing Enter when it's empty** — if `newCardText` is empty, don't preventDefault/handleAddNew. (Defense in depth.)
 
 ### Files
-
-**Changed**
-- `src/components/DeckHub/CardBrowser.tsx` — strip non-expert branch, render `ExpertCardTable` directly.
-- `src/components/DeckHub/ExpertCardTable.tsx` — add `activeRowId` + `selectionAnchorId` state, keyboard handler on the scroll container, row refs for `scrollIntoView`, range serialise/parse helpers (inline, ~30 LOC, RFC-4180 quoting reused from `deckCsv.ts`), clipboard read/write, footer legend.
-
-**Reused**
-- `serializeDeckToCsv` / `parseCsvToCards` quoting logic in `src/lib/deckCsv.ts` — extract a tiny `escapeCell` / `parseLines` helper there so the table can reuse it for TSV.
-
-### Footer legend
-Replace current hint with:
-`↑↓ navigate · ⇧↑↓ select · ⌘C/V copy/paste · Enter edit · ⌘⌫ delete`
+- `src/components/DeckHub/ExpertCardTable.tsx` — add a `useEffect` to focus `containerRef` and set `activeId` to the first row whenever `categoryCards` changes from empty/active-missing to a populated list. Update the new-card Input's `onKeyDown` to no-op when text is empty.
 
 ### Out of scope
-- Multi-column selection (only `text` is editable, so single-column is sufficient).
-- Cross-category paste (paste always lands in the active category).
-- Undo/redo stack (separate feature).
+- Visual focus indicator changes — current ring is sufficient.
+- Changing the keyboard map.
