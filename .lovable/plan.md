@@ -1,43 +1,56 @@
 
-## Fix: Make every card editable in Expert Mode
+## Add EN ⇄ 繁 (zh-HK) language switching — Apple-style HK Chinese
 
-### The bug
-Two issues, both in `ExpertCardTable.tsx`:
+Same architecture as the previous plan, with two refinements based on user feedback.
 
-1. **Editing a default/AI card creates a brand-new wildcard** instead of updating the row in place. `commitEdit()` calls `onAddWildcard(...)` for non-wildcards, so the table keeps growing (the user saw rows numbered 22, 21, 20 appear after "edits"). The original default text stays untouched.
-2. **Editing a wildcard works** (calls `onEditWildcard`) — but only because the prop happens to be wired. No regression here, just confirming.
+### Refinements
 
-There's also a display bug: the sheet passes the *raw* `deckManager.getCardsForCategory` (no moderator overrides applied), so even if we save overrides for default cards, the table won't reflect them until reload.
+**1. Keep professional jargon in English**
+These terms stay in English even in zh-HK mode:
+- `HMW` / `How Might We` (no 「我哋可以點樣」 translation)
+- `Campaign Brief`, `Content Strategy`, `Product Opportunity`, `Social-First`
+- `Freejam`, `Time Attack`, `Target` (game mode names)
+- `AI`, `Wildcard`, `Mash-Up`, `Reshuffle`
+- Category names stay bilingual: `Insight 洞察`, `Asset 資產`, `Catalyst 催化劑`, `Random 隨機` — short EN label kept, Chinese added as supporting text only where space allows; in compact UI keep EN only.
 
-### The fix
-Use the existing moderator-override system (`useModerator.updateCardText` / `resetCardText`) for default + AI cards, and keep `onEditWildcard` for wildcards. Wire override application into the data path that feeds the sheet.
+Implementation: in `zh-HK.json`, these keys hold the English term verbatim. Translators don't touch them.
 
-**Behavior matrix**
-| Card type | On edit | On delete |
+**2. Apple-style tonality for zh-HK**
+Reference: Apple HK product copy — short, confident, declarative, generous spacing in phrasing, avoids exclamation marks and casual particles (冇/喇/㗎). Uses 你 (not 您), present tense, sentence fragments over full sentences.
+
+Examples:
+| English | Old (workshop tone) | New (Apple tone) |
 |---|---|---|
-| Wildcard (custom) | `onEditWildcard(id, text)` — mutates the wildcard | `onRemoveWildcard(id)` (existing) |
-| Default | `onUpdateCardText(id, text)` — saves a moderator override | Not allowed (defaults live in code) |
-| AI-generated | `onUpdateCardText(id, text)` — saves a moderator override | Not allowed (delete via "Reset" / regenerate flow, out of scope) |
+| Draw the unexpected. | 抽出意想不到嘅一張。 | 抽一張，意想不到。 |
+| Four forces. One idea. | 四股力量，一個諗法。 | 四種力量。一個構想。 |
+| Browse Decks | 瀏覽牌組 | 瀏覽牌庫 |
+| Name this combination | 為呢個組合改名 | 為這個組合命名 |
+| How do these forces connect? | 呢四張卡點樣連繫？ | 這些力量如何連結？ |
+| Shuffle the deck | 洗牌 | 洗牌 |
+| Reshuffle | 再洗 | 重新洗牌 |
+| Capture | 儲存 | 儲存構想 |
+| AI Sparks | AI 火花 | AI 靈感 |
+| Your Ideas | 你嘅諗法 | 你的構想 |
 
-If the user clears the textarea on a default/AI card and commits → call `onResetCardText(id)` so the original default text returns. A small "RESET" button replaces the trash icon for overridden default/AI rows so users can revert.
+Style rules baked into translation:
+- Use 的 not 嘅, 是 not 係, 這 not 呢, 和 not 同 (written register, not spoken Cantonese)
+- Verb-noun fragments over full sentences
+- No exclamation marks
+- No emoji-equivalent particles (喇/㗎/啦)
+- Numbers in Arabic, not 一二三
 
-### Files to change
+AI prompt update for `zh-HK`:
+> "Respond in Hong Kong Traditional Chinese (繁體中文 · 香港) using Apple's product copy style: confident, minimal, written register (書面語, not 口語). Use 的/是/這, never 嘅/係/呢. Short declarative sentences. No exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard."
 
-1. **`src/pages/Index.tsx`** — pass the override-aware `getCardsForCategory` (the local `useCallback`, not the raw `deckManager.getCardsForCategory`) into `ShuffleArea`, plus three new props: `onUpdateCardText`, `onResetCardText`, `hasOverride`. The local `getCardsForCategory` already calls `applyOverrides`, so default rows in the table will show their current edited text.
-
-2. **`src/components/ShuffleArea.tsx`** → **`src/components/DeckBrowserSheet.tsx`** → **`src/components/DeckHub/DeckHub.tsx`** → **`src/components/DeckHub/CardBrowser.tsx`** → **`src/components/DeckHub/ExpertCardTable.tsx`** — thread the three new props through the prop chain.
-
-3. **`src/components/DeckHub/ExpertCardTable.tsx`** — rewrite `commitEdit()`:
-   ```text
-   if card.isWildcard           → onEditWildcard(id, trimmed)
-   else if trimmed === ''       → onResetCardText(id)   // revert to original default
-   else                         → onUpdateCardText(id, trimmed)
-   ```
-   Also: in the actions column, when a default/AI row has an override (`hasOverride(card.id)`), show a small **Reset** icon (Undo2) instead of nothing; clicking it calls `onResetCardText(id)`. Wildcards keep their trash icon.
-
-4. **Remove the `(category)` arg mismatch in expert table's `handleExport`** — it calls `getCardsForCategory(cat)` for all four categories, which is fine and continues to work with the override-aware version.
+### Everything else unchanged from prior plan
+- `i18next` + `react-i18next`, `localStorage["language"]`, fallback `en`
+- `LanguageToggle.tsx` in `Header.tsx` showing `EN | 繁`
+- `src/i18n/locales/{en,zh-HK}.json` with ~250 UI keys
+- `src/i18n/cardTranslations.ts` keyed by card id (~120 default cards translated)
+- `getCardText(card, lang)` in `defaultCards.ts` — defaults translated, wildcards/AI/overrides verbatim
+- All 5 edge functions accept `language`, prepend the Apple-tone system instruction when `zh-HK`
+- Client hooks send `i18next.language` in request body
 
 ### Out of scope
-- Letting expert mode delete defaults (they live in code; resetting their override is the equivalent).
-- Bulk-reset for overridden rows.
-- Changing how moderator mode toggles — overrides are saved unconditionally from expert mode (consistent with the spreadsheet metaphor where any cell is editable).
+- Retranslating existing AI cards / saved ideas (stay in original language)
+- Simplified Chinese (architecture supports adding later)
