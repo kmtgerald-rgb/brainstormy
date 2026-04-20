@@ -531,6 +531,7 @@ export function ExpertCardTable({
           onChange={(e) => setNewCardText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
+              if (!newCardText.trim()) return;
               e.preventDefault();
               handleAddNew();
             }
