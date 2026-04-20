@@ -1,10 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Check, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { FocusType, getFocusTypeConfig } from "@/data/focusTypes";
+import { FocusType } from "@/data/focusTypes";
+
+const placeholderKeyMap: Record<FocusType, { name: string; connect: string }> = {
+  hmw:      { name: 'idea.namePlaceholder',         connect: 'idea.connectPlaceholder' },
+  campaign: { name: 'idea.namePlaceholderCampaign', connect: 'idea.connectPlaceholderCampaign' },
+  content:  { name: 'idea.namePlaceholderContent',  connect: 'idea.connectPlaceholderContent' },
+  product:  { name: 'idea.namePlaceholderProduct',  connect: 'idea.connectPlaceholderProduct' },
+  social:   { name: 'idea.namePlaceholderSocial',   connect: 'idea.connectPlaceholderSocial' },
+  open:     { name: 'idea.namePlaceholderOpen',     connect: 'idea.connectPlaceholderOpen' },
+};
 
 interface InlineIdeaCaptureProps {
   onSave: (title: string, description: string, author?: string, isAIGenerated?: boolean) => void;
@@ -27,7 +37,8 @@ export function InlineIdeaCapture({
   onAutoAISuggestChange,
   focusType = 'hmw',
 }: InlineIdeaCaptureProps) {
-  const focusConfig = getFocusTypeConfig(focusType);
+  const { t } = useTranslation();
+  const placeholderKeys = placeholderKeyMap[focusType] ?? placeholderKeyMap.hmw;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -117,7 +128,7 @@ export function InlineIdeaCapture({
           >
             <Check className="w-6 h-6 text-primary" />
           </motion.div>
-          <span className="text-sm font-medium text-muted-foreground">Idea Captured</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('idea.captured')}</span>
         </motion.div>
       ) : (
         <motion.div
@@ -133,7 +144,7 @@ export function InlineIdeaCapture({
             {/* Header with AI Toggle */}
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
-                Idea Canvas
+                {t('idea.canvas')}
               </h3>
               <div className="flex items-center gap-4">
                 {/* Auto AI Toggle */}
@@ -146,7 +157,7 @@ export function InlineIdeaCapture({
                       className="scale-75"
                     />
                     <Label htmlFor="auto-ai" className="text-xs text-muted-foreground cursor-pointer">
-                      Auto AI
+                      {t('idea.autoAI')}
                     </Label>
                   </div>
                 )}
@@ -162,12 +173,12 @@ export function InlineIdeaCapture({
                     {isAILoading ? (
                       <>
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Thinking...
+                        {t('idea.thinking')}
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-3 h-3" />
-                        AI Fill
+                        {t('idea.aiFill')}
                       </>
                     )}
                   </Button>
@@ -185,7 +196,7 @@ export function InlineIdeaCapture({
               >
                 <textarea
                   ref={titleRef}
-                  placeholder={focusConfig.ideaPlaceholder}
+                  placeholder={t(placeholderKeys.name)}
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
@@ -204,7 +215,7 @@ export function InlineIdeaCapture({
               >
                 <textarea
                   ref={descriptionRef}
-                  placeholder={focusConfig.descriptionPlaceholder}
+                  placeholder={t(placeholderKeys.connect)}
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value);
@@ -220,7 +231,7 @@ export function InlineIdeaCapture({
             {isAILoading && autoAISuggest && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                <span className="text-xs">Generating idea...</span>
+                <span className="text-xs">{t('idea.generating')}</span>
               </div>
             )}
 
@@ -233,8 +244,8 @@ export function InlineIdeaCapture({
                 className="gap-2 text-sm"
               >
                 {isUsingAI && <Sparkles className="w-3.5 h-3.5" />}
-                Capture
-                <span className="text-xs text-muted-foreground hidden sm:inline">⌘↵</span>
+                {t('idea.capture')}
+                <span className="text-xs text-muted-foreground hidden sm:inline">{t('idea.captureShortcut')}</span>
               </Button>
             </div>
           </div>

@@ -400,9 +400,7 @@ const Index = () => {
       {/* Footer - add padding for floating bar */}
       <footer className="border-t border-border/50 py-6 pb-24">
         <div className="container mx-auto px-4 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Don't evaluate yet. Combine.
-          </p>
+          <FooterTagline />
         </div>
       </footer>
 
