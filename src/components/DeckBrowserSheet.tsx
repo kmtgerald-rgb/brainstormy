@@ -18,6 +18,9 @@ interface DeckBrowserSheetProps {
   onAddWildcard: (text: string, category: Category) => void;
   onRemoveWildcard: (id: string) => void;
   onEditWildcard?: (id: string, text: string) => void;
+  onUpdateCardText?: (id: string, text: string) => void;
+  onResetCardText?: (id: string) => void;
+  hasOverride?: (id: string) => boolean;
 }
 
 export function DeckBrowserSheet({
@@ -27,6 +30,9 @@ export function DeckBrowserSheet({
   onAddWildcard,
   onRemoveWildcard,
   onEditWildcard,
+  onUpdateCardText,
+  onResetCardText,
+  hasOverride,
 }: DeckBrowserSheetProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -62,6 +68,9 @@ export function DeckBrowserSheet({
             onAddWildcard={onAddWildcard}
             onRemoveWildcard={onRemoveWildcard}
             onEditWildcard={onEditWildcard}
+            onUpdateCardText={onUpdateCardText}
+            onResetCardText={onResetCardText}
+            hasOverride={hasOverride}
           />
         </div>
       </SheetContent>

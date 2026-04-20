@@ -370,10 +370,13 @@ const Index = () => {
             // Deck browser props
             activePreset={deckManager.activePreset}
             wildcards={deckManager.wildcards}
-            getCardsForCategory={deckManager.getCardsForCategory}
+            getCardsForCategory={(cat) => getCardsForCategory(cat, 'all')}
             onAddWildcard={handleAddWildcard}
             onRemoveWildcard={handleRemoveWildcard}
             onEditWildcard={deckManager.updateWildcard}
+            onUpdateCardText={updateCardText}
+            onResetCardText={resetCardText}
+            hasOverride={hasOverride}
           />
         </motion.section>
 
