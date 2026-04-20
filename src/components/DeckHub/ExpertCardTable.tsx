@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect, useCallback, KeyboardEvent } from 'react';
-import { Trash2, Plus, Download, Upload, Sparkles } from 'lucide-react';
+import { Trash2, Plus, Download, Upload, Sparkles, Undo2 } from 'lucide-react';
 import { Card, Category, categoryLabels } from '@/data/defaultCards';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,6 +49,9 @@ interface ExpertCardTableProps {
   onAddWildcard: (text: string, category: Category) => void;
   onRemoveWildcard: (id: string) => void;
   onEditWildcard?: (id: string, text: string) => void;
+  onUpdateCardText?: (id: string, text: string) => void;
+  onResetCardText?: (id: string) => void;
+  hasOverride?: (id: string) => boolean;
 }
 
 const categoryAccent: Record<Category, string> = {
@@ -78,6 +81,9 @@ export function ExpertCardTable({
   onAddWildcard,
   onRemoveWildcard,
   onEditWildcard,
+  onUpdateCardText,
+  onResetCardText,
+  hasOverride,
 }: ExpertCardTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -171,17 +177,23 @@ export function ExpertCardTable({
   const commitEdit = (): { id: string | null } => {
     if (!editingId) return { id: null };
     const id = editingId;
-    if (!editText.trim()) {
-      setEditingId(null);
-      setEditText('');
-      return { id };
-    }
+    const trimmed = editText.trim();
     const card = categoryCards.find((c) => c.id === id);
     if (card) {
-      if (card.isWildcard && onEditWildcard) {
-        onEditWildcard(id, editText.trim());
+      if (card.isWildcard) {
+        // Wildcards: empty text → delete; otherwise update
+        if (!trimmed) {
+          onRemoveWildcard(id);
+        } else if (onEditWildcard) {
+          onEditWildcard(id, trimmed);
+        }
       } else {
-        onAddWildcard(editText.trim(), selectedCategory);
+        // Default / AI: empty → reset to original; otherwise save override
+        if (!trimmed) {
+          onResetCardText?.(id);
+        } else {
+          onUpdateCardText?.(id, trimmed);
+        }
       }
     }
     setEditingId(null);
@@ -633,7 +645,7 @@ export function ExpertCardTable({
                       </span>
                     </TableCell>
                     <TableCell className="py-1.5 px-2 align-top">
-                      {card.isWildcard && (
+                      {card.isWildcard ? (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -644,7 +656,18 @@ export function ExpertCardTable({
                         >
                           <Trash2 className="w-3 h-3 text-destructive/70 hover:text-destructive" />
                         </button>
-                      )}
+                      ) : hasOverride?.(card.id) && onResetCardText ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onResetCardText(card.id);
+                          }}
+                          className="p-1 hover:bg-muted rounded transition-colors opacity-0 group-hover:opacity-100"
+                          title="Reset to default"
+                        >
+                          <Undo2 className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                        </button>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

@@ -13,6 +13,9 @@ interface CardBrowserProps {
   onAddWildcard: (text: string, category: Category) => void;
   onRemoveWildcard: (id: string) => void;
   onEditWildcard?: (id: string, text: string) => void;
+  onUpdateCardText?: (id: string, text: string) => void;
+  onResetCardText?: (id: string) => void;
+  hasOverride?: (id: string) => boolean;
 }
 
 export function CardBrowser({
@@ -22,6 +25,9 @@ export function CardBrowser({
   onAddWildcard,
   onRemoveWildcard,
   onEditWildcard,
+  onUpdateCardText,
+  onResetCardText,
+  hasOverride,
 }: CardBrowserProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category>('insight');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -53,6 +59,9 @@ export function CardBrowser({
         onAddWildcard={onAddWildcard}
         onRemoveWildcard={onRemoveWildcard}
         onEditWildcard={onEditWildcard}
+        onUpdateCardText={onUpdateCardText}
+        onResetCardText={onResetCardText}
+        hasOverride={hasOverride}
       />
     </div>
   );
