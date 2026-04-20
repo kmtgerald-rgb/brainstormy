@@ -109,13 +109,32 @@ export function ExpertCardTable({
     return [...baseCards, ...categoryWildcards];
   }, [selectedCategory, filter, getCardsForCategory, wildcards]);
 
-  // Reset selection when the visible rows change
+  // Keep selection valid + ensure there's always an active row so Enter has a target
   useEffect(() => {
-    if (activeId && !categoryCards.find((c) => c.id === activeId)) {
-      setActiveId(null);
-      setAnchorId(null);
+    if (categoryCards.length === 0) {
+      if (activeId !== null) {
+        setActiveId(null);
+        setAnchorId(null);
+      }
+      return;
+    }
+    if (!activeId || !categoryCards.find((c) => c.id === activeId)) {
+      const firstId = categoryCards[0].id;
+      setActiveId(firstId);
+      setAnchorId(firstId);
     }
   }, [categoryCards, activeId]);
+
+  // Focus the table container when category/filter changes so keyboard shortcuts
+  // (Enter to edit, arrows to navigate) work without an extra click.
+  useEffect(() => {
+    // Don't steal focus while the user is mid-edit or typing in another input
+    const active = document.activeElement as HTMLElement | null;
+    if (editingId) return;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+    containerRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, filter]);
 
   // Compute the set of selected row ids (range between anchor and active)
   const selectedIds = useMemo(() => {
