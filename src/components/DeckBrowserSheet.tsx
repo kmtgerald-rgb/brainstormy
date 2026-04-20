@@ -43,7 +43,7 @@ export function DeckBrowserSheet({
           <span>Browse Decks</span>
         </button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-80 sm:w-96 overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle className="font-serif text-xl flex items-center gap-2">
             <Layers className="w-5 h-5" />
