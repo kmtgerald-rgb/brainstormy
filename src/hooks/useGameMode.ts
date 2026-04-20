@@ -34,7 +34,7 @@ export function useGameMode() {
   const [endedAt, setEndedAt] = useState<Date | null>(null);
   const [showEndModal, setShowEndModal] = useState(false);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const availableModes: GameMode[] = ['freejam', 'time-attack', 'target'];
 

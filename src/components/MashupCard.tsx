@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, Pencil, X, Info, ArrowLeftRight, Sparkles, Loader2 } from 'lucide-react';
+import { X, Info, ArrowLeftRight } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 
@@ -125,8 +125,6 @@ export function MashupCard({
   const handleCardClick = (e: React.MouseEvent) => {
     if (flippable) {
       handleFlip(e);
-    } else if (isModeratorMode && onEdit) {
-      onEdit();
     } else if (onClick) {
       onClick();
     }
@@ -137,8 +135,7 @@ export function MashupCard({
     categoryAccentStyles[card.category],
     card.isWildcard && 'border-dashed border-l-solid',
     isSelected && 'ring-1 ring-foreground',
-    hasOverride && 'ring-1 ring-amber-500/50',
-    (onClick || flippable || isModeratorMode) && 'cursor-pointer hover:card-shadow-hover hover:-translate-y-0.5',
+    (onClick || flippable) && 'cursor-pointer hover:card-shadow-hover hover:-translate-y-0.5',
     sizeClasses[size]
   );
 
@@ -151,47 +148,15 @@ export function MashupCard({
             AI
           </span>
         )}
-        {hasOverride && (
-          <span title="Modified from original">
-            <RotateCcw className="w-3 h-3 text-amber-500" />
-          </span>
-        )}
-        {card.isWildcard && !isModeratorMode && (
+        {card.isWildcard && (
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Wildcard
           </span>
         )}
-        {isModeratorMode && (
-          <Pencil
-            className={cn('w-3 h-3', categoryTextStyles[card.category])}
-          />
-        )}
-        {onRegenerate && !isModeratorMode && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRegenerate();
-            }}
-            disabled={isRegenerating}
-            className={cn(
-              'p-1 rounded transition-colors',
-              isRegenerating 
-                ? 'cursor-not-allowed' 
-                : 'hover:bg-muted/80'
-            )}
-            title="Generate new card"
-          >
-            {isRegenerating ? (
-              <Loader2 className={cn('w-3.5 h-3.5 animate-spin', categoryTextStyles[card.category])} />
-            ) : (
-              <Sparkles className={cn('w-3.5 h-3.5', categoryTextStyles[card.category])} />
-            )}
-          </button>
-        )}
-        {flippable && !isModeratorMode && !onRegenerate && (
+        {flippable && (
           <Info className={cn('w-3 h-3', categoryTextStyles[card.category])} />
         )}
-        {onRemove && !isModeratorMode && (
+        {onRemove && (
           <button
             onClick={(e) => {
               e.stopPropagation();
