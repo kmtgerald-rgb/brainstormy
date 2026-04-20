@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, Pencil, X, Info, ArrowLeftRight, Sparkles, Loader2 } from 'lucide-react';
+import { RotateCcw, X, Info, ArrowLeftRight } from 'lucide-react';
 import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
 import { cn } from '@/lib/utils';
 
