@@ -23,11 +23,96 @@ const cardType = (card: Card): CsvCardType => {
 };
 
 // RFC 4180 quoting
-const escapeField = (value: string): string => {
-  const needsQuoting = /[",\r\n]/.test(value);
+export const escapeField = (value: string): string => {
+  const needsQuoting = /[",\r\n\t]/.test(value);
   const escaped = value.replace(/"/g, '""');
   return needsQuoting ? `"${escaped}"` : escaped;
 };
+
+/**
+ * Serialize a list of single-column text values as TSV (one per line),
+ * RFC-4180 quoting any value containing tabs, quotes, or newlines so multi-line
+ * cells round-trip cleanly through Excel/Sheets.
+ */
+export function serializeTextLinesToTsv(texts: string[]): string {
+  return texts.map(escapeField).join('\r\n');
+}
+
+/**
+ * Parse pasted clipboard text (TSV or plain lines) into a flat list of strings.
+ * - Splits on row terminators (CRLF/LF) respecting RFC-4180 quoted fields
+ *   (so multi-line quoted cells stay together).
+ * - If rows have multiple tab-separated columns, only the FIRST column is kept.
+ * - Empty trailing/blank lines are dropped.
+ * Returns { lines, hadMultipleColumns } so the caller can hint the user.
+ */
+export function parsePastedTextToLines(text: string): {
+  lines: string[];
+  hadMultipleColumns: boolean;
+} {
+  const rows: string[][] = [];
+  let current: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const char = text[i];
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        }
+        inQuotes = false;
+        i++;
+        continue;
+      }
+      field += char;
+      i++;
+      continue;
+    }
+    if (char === '"') {
+      inQuotes = true;
+      i++;
+      continue;
+    }
+    if (char === '\t') {
+      current.push(field);
+      field = '';
+      i++;
+      continue;
+    }
+    if (char === '\r') {
+      i++;
+      continue;
+    }
+    if (char === '\n') {
+      current.push(field);
+      rows.push(current);
+      current = [];
+      field = '';
+      i++;
+      continue;
+    }
+    field += char;
+    i++;
+  }
+  if (field.length > 0 || current.length > 0) {
+    current.push(field);
+    rows.push(current);
+  }
+
+  let hadMultipleColumns = false;
+  const lines: string[] = [];
+  for (const row of rows) {
+    if (row.length > 1) hadMultipleColumns = true;
+    const first = (row[0] ?? '').trim();
+    if (first.length > 0) lines.push(first);
+  }
+  return { lines, hadMultipleColumns };
+}
 
 export function serializeDeckToCsv(cards: Card[]): string {
   const header = 'category,text,type';
