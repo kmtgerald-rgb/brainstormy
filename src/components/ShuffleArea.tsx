@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pencil, Layers } from 'lucide-react';
-import { Card, Category, categoryShortLabels } from '@/data/defaultCards';
+import { useTranslation } from 'react-i18next';
+import { Card, Category } from '@/data/defaultCards';
 import { InsightVariant, TechVariant } from '@/data/deckVariants';
 import { FocusType } from '@/data/focusTypes';
 import { MashupCard } from './MashupCard';
@@ -102,6 +103,7 @@ export function ShuffleArea({
   onUpdateCardText,
   onResetCardText,
 }: ShuffleAreaProps) {
+  const { t } = useTranslation();
   const hasAnyCard = categories.some((cat) => selectedCards[cat] !== null);
   const hasAllCards = categories.every((cat) => selectedCards[cat] !== null);
   
@@ -131,9 +133,9 @@ export function ShuffleArea({
               exit={{ opacity: 0 }}
               className="space-y-2"
             >
-              <h2 className="font-serif text-4xl md:text-5xl">Draw the unexpected.</h2>
+              <h2 className="font-serif text-4xl md:text-5xl">{t('app.tagline')}</h2>
               <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
-                Four forces. One idea.
+                {t('app.subtitle')}
               </p>
             </motion.div>
           )}
@@ -159,8 +161,8 @@ export function ShuffleArea({
             </>
           ) : (
             <>
-              <span>Free Brainstorm</span>
-              <span className="text-muted-foreground/60">· Click to set focus</span>
+              <span>{t('shuffle.freeBrainstorm')}</span>
+              <span className="text-muted-foreground/60">· {t('shuffle.clickToSetFocus')}</span>
             </>
           )}
         </motion.button>
@@ -218,7 +220,7 @@ export function ShuffleArea({
                   )}
                 >
                   <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
-                    {categoryShortLabels[category]}
+                    {t(`categories.${category}Short` as const)}
                   </span>
                 </div>
               )}

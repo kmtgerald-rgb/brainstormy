@@ -19,7 +19,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { category, existingCards, problemStatement } = body;
+    const { category, existingCards, problemStatement, language } = body;
 
     // Input validation
     const validCategories = ['insight', 'asset', 'tech', 'random'];
@@ -60,7 +60,10 @@ serve(async (req) => {
       ? `Consider this problem context for inspiration: "${problemStatement}"\n\n` 
       : '';
 
-    const systemPrompt = `You are a creative strategist helping with brainstorming. Generate fresh, original ideas that spark creative thinking. Be concise and strategic.`;
+    const isZhHK = language === 'zh-HK';
+    const systemPrompt = isZhHK
+      ? `You are a creative strategist helping with brainstorming. Generate fresh, original ideas that spark creative thinking. Be concise and strategic. Respond in Hong Kong Traditional Chinese (繁體中文 · 香港) using Apple's product copy style: confident, minimal, written register (書面語, not 口語). Use 的/是/這, never 嘅/係/呢. Short declarative phrase. No exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard.`
+      : `You are a creative strategist helping with brainstorming. Generate fresh, original ideas that spark creative thinking. Be concise and strategic.`;
     
     const userPrompt = `${contextClause}${categoryPrompts[category]}
 

@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { ControlPanel } from './ControlPanel';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 import { GameMode, GameSettings } from '@/hooks/useGameMode';
 
 interface HeaderProps {
@@ -34,13 +36,15 @@ export function Header({
   onImportPresets,
   onResetDeck,
 }: HeaderProps) {
+  const { t } = useTranslation();
   return (
     <header className="border-b border-border/50 bg-background sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="font-serif text-2xl tracking-tight">Brainstormy</h1>
+          <h1 className="font-serif text-2xl tracking-tight">{t('app.title')}</h1>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <ControlPanel
               isModeratorMode={isModeratorMode}

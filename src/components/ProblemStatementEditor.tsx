@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, Check, X } from 'lucide-react';
+import i18n from '@/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,7 +44,7 @@ export function ProblemStatementEditor({
     setIsRefining(true);
     try {
       const { data, error } = await supabase.functions.invoke('refine-problem-statement', {
-        body: { context: context.trim(), focusType },
+        body: { context: context.trim(), focusType, language: i18n.language },
       });
 
       if (error) throw error;

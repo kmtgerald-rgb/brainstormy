@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import i18n from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, Category } from '@/data/defaultCards';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ export function useCardRegeneration(): RegenerationState {
             category,
             existingCards: categoryCards,
             problemStatement: problemStatement || undefined,
+            language: i18n.language,
           },
         });
 

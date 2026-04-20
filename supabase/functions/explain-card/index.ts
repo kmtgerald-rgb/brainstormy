@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cardText, category } = await req.json();
+    const { cardText, category, language } = await req.json();
 
     // Input validation
     const validCategories = ['insight', 'asset', 'tech', 'random'];
@@ -51,6 +51,10 @@ serve(async (req) => {
     }
 
     const categoryContext = categoryPrompts[category] || categoryPrompts.random;
+    const isZhHK = language === 'zh-HK';
+    const systemMsg = isZhHK
+      ? `You are a strategic innovation consultant. Respond with ONE short, punchy sentence only. Max 40 Chinese characters. Use Hong Kong Traditional Chinese (繁體中文 · 香港) in Apple product copy style: written register (書面語), use 的/是/這 never 嘅/係/呢, no exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard.`
+      : `You are a strategic innovation consultant. Respond with ONE short, punchy sentence only. Max 80 characters. No fluff.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -61,16 +65,13 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: `You are a strategic innovation consultant. Respond with ONE short, punchy sentence only. Max 80 characters. No fluff.`
-          },
+          { role: 'system', content: systemMsg },
           {
             role: 'user',
             content: `${categoryContext}\n\nCard: "${cardText}"`
           }
         ],
-        max_tokens: 60,
+        max_tokens: 80,
         temperature: 0.7,
       }),
     });

@@ -30,7 +30,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { cards, problemStatement, focusType } = body;
+    const { cards, problemStatement, focusType, language } = body;
     
     if (!cards || typeof cards !== 'object') {
       return new Response(
@@ -93,6 +93,11 @@ Respond with a JSON object containing:
 
 Be creative, practical, and exciting. Focus on how these elements work together synergistically.`;
 
+    const isZhHK = language === 'zh-HK';
+    const langInstruction = isZhHK
+      ? `Respond in Hong Kong Traditional Chinese (繁體中文 · 香港) using Apple's product copy style: confident, minimal, written register (書面語, not 口語). Use 的/是/這, never 嘅/係/呢. Short declarative sentences. No exclamation marks. Keep these English terms verbatim: HMW, Campaign Brief, AI, Wildcard. Output the JSON keys "title" and "description" with values in Traditional Chinese.`
+      : 'Respond in English.';
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -102,6 +107,7 @@ Be creative, practical, and exciting. Focus on how these elements work together 
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
+          { role: "system", content: langInstruction },
           { role: "user", content: prompt }
         ],
         temperature: 0.9,

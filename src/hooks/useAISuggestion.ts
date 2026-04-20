@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import i18n from '@/i18n';
 import { Card, Category } from '@/data/defaultCards';
 import { toast } from 'sonner';
 
@@ -44,6 +45,7 @@ export function useAISuggestion() {
             },
             problemStatement: problemStatement || undefined,
             focusType: focusType || undefined,
+            language: i18n.language,
           }),
         }
       );

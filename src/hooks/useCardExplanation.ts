@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import i18n from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/data/defaultCards';
 
@@ -25,7 +26,7 @@ export function useCardExplanation() {
 
     try {
       const { data, error } = await supabase.functions.invoke('explain-card', {
-        body: { cardText: card.text, category: card.category }
+        body: { cardText: card.text, category: card.category, language: i18n.language }
       });
 
       if (error) throw error;

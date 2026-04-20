@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Header } from '@/components/Header';
 import { ShuffleArea } from '@/components/ShuffleArea';
 import { FloatingActionBar } from '@/components/FloatingActionBar';
@@ -20,6 +21,15 @@ import { FilterMode } from '@/hooks/useCards';
 const categories: Category[] = ['insight', 'asset', 'tech', 'random'];
 
 const SAVED_IDEAS_KEY = 'mashup-saved-ideas';
+
+function FooterTagline() {
+  const { t } = useTranslation();
+  return (
+    <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      {t('app.footer')}
+    </p>
+  );
+}
 
 interface SavedIdea {
   id: string;
@@ -400,9 +410,7 @@ const Index = () => {
       {/* Footer - add padding for floating bar */}
       <footer className="border-t border-border/50 py-6 pb-24">
         <div className="container mx-auto px-4 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Don't evaluate yet. Combine.
-          </p>
+          <FooterTagline />
         </div>
       </footer>
 

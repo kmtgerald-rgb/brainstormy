@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import i18n from '@/i18n';
 import { Card, Category, defaultCards } from '@/data/defaultCards';
 import { 
   InsightVariant, 
@@ -246,7 +247,7 @@ export function useDeckManager() {
     try {
       const type = variant === 'industry' ? 'industry' : 'region';
       const { data, error } = await supabase.functions.invoke('generate-deck', {
-        body: { type, context },
+        body: { type, context, language: i18n.language },
       });
 
       if (error) throw error;
